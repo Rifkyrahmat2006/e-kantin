@@ -18,7 +18,30 @@ export default function Checkout() {
         setError('');
 
         try {
+            // Get shop_id from the first item (all items should be from same shop)
+            let shopId = items.length > 0 ? items[0].shop_id : null;
+
+            // If shop_id is missing, try to fetch it from the API for the first item
+            if (!shopId && items.length > 0) {
+                try {
+                    const menuRes = await api.get(`/menus/${items[0].id}`);
+                    shopId = menuRes.data.menu.shop_id;
+
+                    // Update the item in the cart context (optional but good for consistency)
+                    // For now, we just use it for this request
+                } catch (e) {
+                    console.error("Failed to fetch shop details", e);
+                }
+            }
+
+            if (!shopId) {
+                setError("Unable to determine shop for these items. Please remove them and try again.");
+                setIsLoading(false);
+                return;
+            }
+
             await api.post('/orders', {
+                shop_id: shopId,
                 items: items.map(item => ({
                     menu_id: item.id,
                     quantity: item.quantity

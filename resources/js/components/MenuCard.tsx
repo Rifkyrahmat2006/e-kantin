@@ -10,6 +10,7 @@ interface Menu {
     menu_category_id: number;
     image?: string;
     status: string;
+    shop_id: number;
 }
 
 interface MenuCardProps {
@@ -48,7 +49,8 @@ export default function MenuCard({ menu }: MenuCardProps) {
                             name: menu.name,
                             price: Number(menu.price),
                             quantity: 1,
-                            image: menu.image
+                            image: menu.image,
+                            shop_id: menu.shop_id
                         });
                     }}
                     className="relative z-10 flex w-full items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
