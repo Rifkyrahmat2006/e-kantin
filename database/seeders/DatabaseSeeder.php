@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,15 +14,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Create Filament admin user
         User::firstOrCreate(
-            ['email' => 'test@example.com'],
+            ['email' => 'admin@kantin.com'],
             [
-                'name' => 'Test User',
-                'password' => 'password',
+                'name' => 'Admin Kantin',
+                'password' => Hash::make('admin123'),
                 'email_verified_at' => now(),
             ]
         );
+
+        // Seed in order to respect foreign key constraints
+        $this->call([
+            AdminSeeder::class,
+            MenuCategorySeeder::class,
+            MenuSeeder::class,
+            CustomerSeeder::class,
+            ExpenseSeeder::class,
+        ]);
     }
 }

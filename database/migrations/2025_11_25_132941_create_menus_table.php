@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('menus', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('menu_category_id')->constrained('menu_categories')->onUpdate('cascade')->onDelete('restrict');
+            $table->string('name', 150);
+            $table->decimal('price', 12, 2);
+            $table->unsignedInteger('stock')->default(0);
+            $table->text('description')->nullable();
+            $table->enum('status', ['available', 'unavailable'])->default('available');
+            $table->timestamps();
+            
+            // Indexes
+            $table->index('menu_category_id');
+            $table->index('status');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('menus');
+    }
+};
