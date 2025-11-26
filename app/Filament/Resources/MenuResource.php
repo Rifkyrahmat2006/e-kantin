@@ -23,6 +23,11 @@ class MenuResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('shop_id')
+                    ->relationship('shop', 'name')
+                    ->required()
+                    ->hidden(fn () => ! auth()->user()->isSuperAdmin())
+                    ->default(fn () => auth()->user()->shop?->id),
                 Forms\Components\Select::make('menu_category_id')
                     ->relationship('category', 'name')
                     ->required(),
@@ -53,6 +58,10 @@ class MenuResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('shop.name')
+                    ->label('Shop')
+                    ->sortable()
+                    ->hidden(fn () => ! auth()->user()->isSuperAdmin()),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Category')
                     ->sortable(),
@@ -111,5 +120,16 @@ class MenuResource extends Resource
             'create' => Pages\CreateMenu::route('/create'),
             'edit' => Pages\EditMenu::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->isTenantAdmin()) {
+            $query->where('shop_id', auth()->user()->shop?->id);
+        }
+
+        return $query;
     }
 }

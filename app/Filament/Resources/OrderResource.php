@@ -44,6 +44,10 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('shop.name')
+                    ->label('Shop')
+                    ->sortable()
+                    ->hidden(fn () => ! auth()->user()->isSuperAdmin()),
                 Tables\Columns\TextColumn::make('customer_id')
                     ->numeric()
                     ->sortable(),
@@ -97,5 +101,16 @@ class OrderResource extends Resource
             'create' => Pages\CreateOrder::route('/create'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->isTenantAdmin()) {
+            $query->where('shop_id', auth()->user()->shop?->id);
+        }
+
+        return $query;
     }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import { useCart } from '../../contexts/CartContext';
 import MenuCard from '../../components/MenuCard';
@@ -16,6 +17,7 @@ interface Menu {
     menu_category_id: number;
     image?: string;
     status: string;
+    shop_id: number;
 }
 
 export default function Menu() {
@@ -24,13 +26,22 @@ export default function Menu() {
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { addToCart } = useCart();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const shopId = searchParams.get('shop_id');
 
     useEffect(() => {
+        if (!shopId) {
+            // If no shop selected, redirect to home
+            navigate('/');
+            return;
+        }
+
         const fetchData = async () => {
             try {
                 const [categoriesRes, menusRes] = await Promise.all([
                     api.get('/categories'),
-                    api.get('/menus')
+                    api.get(`/menus?shop_id=${shopId}`)
                 ]);
                 setCategories(categoriesRes.data.categories);
                 setMenus(menusRes.data.menus);
@@ -42,7 +53,7 @@ export default function Menu() {
         };
 
         fetchData();
-    }, []);
+    }, [shopId, navigate]);
 
     const filteredMenus = selectedCategory
         ? menus.filter(menu => menu.menu_category_id === selectedCategory)

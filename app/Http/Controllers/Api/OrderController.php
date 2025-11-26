@@ -38,8 +38,14 @@ class OrderController extends Controller
             // Update customer table number
             $request->user()->update(['table_number' => $request->table_number]);
 
+            // Validate shop_id
+            if (!$request->has('shop_id')) {
+                throw new \Exception("Shop ID is required");
+            }
+
             // Create order
             $order = Order::create([
+                'shop_id' => $request->shop_id,
                 'customer_id' => $request->user()->id,
                 'order_time' => now(),
                 'total_amount' => 0, // Will calculate below
@@ -61,6 +67,11 @@ class OrderController extends Controller
                 // Validate status
                 if ($menu->status !== 'available') {
                     throw new \Exception("{$menu->name} is not available");
+                }
+
+                // Validate shop
+                if ($menu->shop_id != $request->shop_id) {
+                    throw new \Exception("{$menu->name} does not belong to the selected shop");
                 }
 
                 $subtotal = $menu->price * $item['quantity'];

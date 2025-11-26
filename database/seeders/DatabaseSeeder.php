@@ -21,12 +21,14 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Admin Kantin',
                 'password' => Hash::make('admin123'),
                 'email_verified_at' => now(),
+                'role' => User::ROLE_SUPER_ADMIN,
             ]
         );
 
         // Seed in order to respect foreign key constraints
         $this->call([
             AdminSeeder::class,
+            ShopSeeder::class,
             MenuCategorySeeder::class,
             MenuSeeder::class,
             CustomerSeeder::class,

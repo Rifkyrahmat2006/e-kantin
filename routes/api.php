@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ShopController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,10 @@ Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/categories', [MenuController::class, 'categories']);
 Route::get('/categories/{id}/menus', [MenuController::class, 'menusByCategory']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
+
+// Public shop routes
+Route::get('/shops', [ShopController::class, 'index']);
+Route::get('/shops/{id}', [ShopController::class, 'show']);
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {

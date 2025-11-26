@@ -50,4 +50,24 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
+
+    // Role constants
+    const ROLE_SUPER_ADMIN = 'super_admin';
+    const ROLE_TENANT_ADMIN = 'tenant_admin';
+
+    public function isSuperAdmin()
+    {
+        return $this->role === self::ROLE_SUPER_ADMIN;
+    }
+
+    public function isTenantAdmin()
+    {
+        return $this->role === self::ROLE_TENANT_ADMIN;
+    }
+
+    // Relationships
+    public function shop()
+    {
+        return $this->hasOne(Shop::class, 'owner_user_id');
+    }
 }

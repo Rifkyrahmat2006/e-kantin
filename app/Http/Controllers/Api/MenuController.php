@@ -12,12 +12,17 @@ class MenuController extends Controller
     /**
      * Get all active menus
      */
-    public function index()
+    public function index(Request $request)
     {
-        $menus = Menu::where('status', 'available')
+        $query = Menu::where('status', 'available')
             ->where('stock', '>', 0)
-            ->with('category')
-            ->get();
+            ->with('category');
+
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->shop_id);
+        }
+
+        $menus = $query->get();
 
         return response()->json([
             'menus' => $menus,
@@ -40,14 +45,19 @@ class MenuController extends Controller
     /**
      * Get menus by category
      */
-    public function menusByCategory($categoryId)
+    public function menusByCategory(Request $request, $categoryId)
     {
         $category = MenuCategory::findOrFail($categoryId);
         
-        $menus = Menu::where('menu_category_id', $categoryId)
+        $query = Menu::where('menu_category_id', $categoryId)
             ->where('status', 'available')
-            ->where('stock', '>', 0)
-            ->get();
+            ->where('stock', '>', 0);
+
+        if ($request->has('shop_id')) {
+            $query->where('shop_id', $request->shop_id);
+        }
+
+        $menus = $query->get();
 
         return response()->json([
             'category' => $category,

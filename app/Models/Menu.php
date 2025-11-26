@@ -12,6 +12,7 @@ class Menu extends Model
     protected $table = 'menus';
 
     protected $fillable = [
+        'shop_id',
         'menu_category_id',
         'name',
         'price',
@@ -35,6 +36,11 @@ class Menu extends Model
     public function category()
     {
         return $this->belongsTo(MenuCategory::class, 'menu_category_id');
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class);
     }
 
     public function orderItems()

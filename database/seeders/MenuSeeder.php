@@ -12,9 +12,14 @@ class MenuSeeder extends Seeder
      */
     public function run(): void
     {
+        $shop1 = \App\Models\Shop::where('name', 'Warung Bu Tini')->first()->id;
+        $shop2 = \App\Models\Shop::where('name', 'Pojok Jus')->first()->id;
+        $shop3 = \App\Models\Shop::where('name', 'Snack Corner')->first()->id;
+
         DB::table('menus')->insert([
-            // Makanan Pembuka (Category 1)
+            // Makanan Pembuka (Category 1) - Shop 1
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 1,
                 'name' => 'Lumpia Goreng',
                 'price' => 8000,
@@ -25,6 +30,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 1,
                 'name' => 'Tahu Isi',
                 'price' => 5000,
@@ -35,8 +41,9 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             
-            // Makanan Utama (Category 2)
+            // Makanan Utama (Category 2) - Shop 1
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 2,
                 'name' => 'Nasi Goreng Spesial',
                 'price' => 15000,
@@ -47,6 +54,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 2,
                 'name' => 'Mie Goreng',
                 'price' => 12000,
@@ -57,6 +65,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 2,
                 'name' => 'Ayam Geprek',
                 'price' => 18000,
@@ -67,6 +76,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 2,
                 'name' => 'Soto Ayam',
                 'price' => 13000,
@@ -77,6 +87,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop1,
                 'menu_category_id' => 2,
                 'name' => 'Nasi Pecel',
                 'price' => 10000,
@@ -87,8 +98,9 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             
-            // Minuman (Category 3)
+            // Minuman (Category 3) - Shop 2
             [
+                'shop_id' => $shop2,
                 'menu_category_id' => 3,
                 'name' => 'Es Teh Manis',
                 'price' => 3000,
@@ -99,6 +111,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop2,
                 'menu_category_id' => 3,
                 'name' => 'Es Jeruk',
                 'price' => 5000,
@@ -109,6 +122,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop2,
                 'menu_category_id' => 3,
                 'name' => 'Kopi Hitam',
                 'price' => 4000,
@@ -119,6 +133,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop2,
                 'menu_category_id' => 3,
                 'name' => 'Es Campur',
                 'price' => 8000,
@@ -129,8 +144,9 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             
-            // Snack & Camilan (Category 4)
+            // Snack & Camilan (Category 4) - Shop 3
             [
+                'shop_id' => $shop3,
                 'menu_category_id' => 4,
                 'name' => 'Pisang Goreng',
                 'price' => 5000,
@@ -141,6 +157,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop3,
                 'menu_category_id' => 4,
                 'name' => 'Cireng',
                 'price' => 6000,
@@ -151,6 +168,7 @@ class MenuSeeder extends Seeder
                 'updated_at' => now(),
             ],
             [
+                'shop_id' => $shop3,
                 'menu_category_id' => 4,
                 'name' => 'Risoles',
                 'price' => 7000,
