@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import api from '../../../lib/api';
@@ -20,9 +21,16 @@ export default function Login() {
             // CSRF protection for Laravel Sanctum
             await api.get('/sanctum/csrf-cookie');
 
-            const response = await api.post('/login', {
+            // Use axios directly to hit the web route (not /api/login) to ensure session cookies are set
+            const response = await axios.post('/login', {
                 email,
                 password,
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true
             });
 
             const { token, user } = response.data;

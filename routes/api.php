@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Route::post('/login', [AuthController::class, 'login']); // Moved to web.php for session support
 
 // Public menu routes
 Route::get('/menus', [MenuController::class, 'index']);
@@ -25,7 +25,7 @@ Route::get('/menus/{id}', [MenuController::class, 'show']);
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
-    Route::post('/logout', [AuthController::class, 'logout']);
+    // Route::post('/logout', [AuthController::class, 'logout']); // Moved to web.php
     Route::get('/me', [AuthController::class, 'me']);
     
     // Order routes

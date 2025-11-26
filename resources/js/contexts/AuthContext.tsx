@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 import api from '../lib/api';
 
 interface User {
     id: number;
     name: string;
     email: string;
-    // Add other user fields as needed
+    role: 'admin' | 'customer';
 }
 
 interface AuthContextType {
@@ -52,7 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = async () => {
         try {
-            await api.post('/logout');
+            // Use axios directly to hit the web route (not /api/logout)
+            await axios.post('/logout', {}, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}` // Still send token for API logout
+                },
+                withCredentials: true
+            });
         } catch (error) {
             console.error('Logout failed', error);
         } finally {

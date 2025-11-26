@@ -27,13 +27,21 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Registrasi berhasil',
-            'customer' => $customer,
+            'user' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'role' => 'customer',
+            ],
             'token' => $token,
         ], 201);
     }
 
     /**
      * Login customer
+     */
+    /**
+     * Login customer or admin
      */
     public function login(Request $request)
     {
@@ -42,6 +50,29 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Attempt Admin Login first
+        if (\Illuminate\Support\Facades\Auth::guard('web')->attempt($request->only('email', 'password'))) {
+            $user = \Illuminate\Support\Facades\Auth::guard('web')->user();
+            
+            // Create token for admin (optional, if you want to use API for admin too, 
+            // but for now we just need the session for Filament)
+            // Note: Filament uses session auth by default.
+            // We return a token so the frontend knows we are logged in.
+            $token = $user->createToken('admin-token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login berhasil as Admin',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => 'admin',
+                ],
+                'token' => $token,
+            ]);
+        }
+
+        // Attempt Customer Login
         $customer = Customer::where('email', $request->email)->first();
 
         if (!$customer || !Hash::check($request->password, $customer->password)) {
@@ -54,7 +85,12 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Login berhasil',
-            'customer' => $customer,
+            'user' => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'role' => 'customer',
+            ],
             'token' => $token,
         ]);
     }
@@ -62,9 +98,23 @@ class AuthController extends Controller
     /**
      * Logout customer (revoke token)
      */
+    /**
+     * Logout customer (revoke token and session)
+     */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Revoke token if exists (for API/Sanctum)
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
+        }
+
+        // Logout web session (for Filament/Admin)
+        \Illuminate\Support\Facades\Auth::guard('web')->logout();
+
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'message' => 'Logout berhasil',
@@ -76,8 +126,17 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
+        $user = $request->user();
+        // Determine role based on class
+        $role = $user instanceof \App\Models\User ? 'admin' : 'customer';
+
         return response()->json([
-            'customer' => $request->user(),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $role,
+            ],
         ]);
     }
 }

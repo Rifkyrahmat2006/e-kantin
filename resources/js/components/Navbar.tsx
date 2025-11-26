@@ -28,7 +28,12 @@ export default function Navbar() {
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
 
                         {isAuthenticated ? (
-                            <div className="ml-3 relative">
+                            <div className="ml-3 relative flex items-center space-x-4">
+                                {user?.role === 'admin' && (
+                                    <a href="/admin" className="text-sm font-medium text-gray-500 hover:text-gray-900">
+                                        Dashboard
+                                    </a>
+                                )}
                                 <span className="mr-2">{user?.name}</span>
                                 <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-900">Logout</button>
                             </div>
