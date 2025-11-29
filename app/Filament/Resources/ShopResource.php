@@ -34,9 +34,10 @@ class ShopResource extends Resource
                 Forms\Components\Textarea::make('description')
                     ->maxLength(65535)
                     ->columnSpanFull(),
-                Forms\Components\FileUpload::make('image_logo')
+                Forms\Components\FileUpload::make('image')
                     ->image()
-                    ->directory('shops'),
+                    ->directory('shops')
+                    ->disk('public'),
                 Forms\Components\Select::make('status')
                     ->options([
                         'open' => 'Open',
@@ -53,6 +54,7 @@ class ShopResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\ImageColumn::make('image'),
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
                     ->sortable(),

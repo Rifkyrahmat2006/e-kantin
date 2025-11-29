@@ -1,78 +1,102 @@
-import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { MapPin, UtensilsCrossed, Search } from 'lucide-react';
 import api from '../../lib/api';
+import MenuCard, { Menu } from '../../components/MenuCard';
+import { Shop } from '../../components/ShopCard';
 
-interface Shop {
-    id: number;
-    name: string;
-    description: string;
-    image_logo: string;
-    status: string;
+interface MenuWithShop extends Menu {
+    shop: Shop;
 }
 
 export default function Home() {
-    const [shops, setShops] = useState<Shop[]>([]);
+    const [menus, setMenus] = useState<MenuWithShop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchParams] = useSearchParams();
+    const searchQuery = searchParams.get('search') || '';
 
     useEffect(() => {
-        const fetchShops = async () => {
+        const fetchMenus = async () => {
             try {
-                const response = await api.get('/shops');
-                setShops(response.data.shops);
+                const response = await api.get('/menus');
+                // Randomize menus
+                const shuffled = response.data.menus.sort(() => 0.5 - Math.random());
+                setMenus(shuffled);
             } catch (error) {
-                console.error('Error fetching shops:', error);
+                console.error('Failed to fetch menus:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchShops();
+        fetchMenus();
     }, []);
 
+    const navigate = useNavigate();
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const query = e.target.value;
+        navigate(`/?search=${encodeURIComponent(query)}`);
+    };
+
     return (
-        <div className="bg-white">
-            {/* Hero Section */}
-            <div className="relative isolate px-6 pt-14 lg:px-8">
-                <div className="mx-auto max-w-2xl py-16 sm:py-24 lg:py-32">
-                    <div className="text-center">
-                        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
-                            Delicious Food, Delivered to Your Table
-                        </h1>
-                        <p className="mt-6 text-lg leading-8 text-gray-600">
-                            Choose a shop and start ordering!
-                        </p>
+        <div className="min-h-screen bg-gray-50 pb-24">
+            {/* Header */}
+            <div className="bg-white px-4 pt-6 pb-2">
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900">Selamat Datang!</h1>
+                        <p className="text-sm text-gray-500 mt-1">Mau makan apa hari ini?</p>
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded-full">
+                        <MapPin className="h-5 w-5 text-blue-600" />
                     </div>
                 </div>
             </div>
 
-            {/* Shop List */}
-            <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12 lg:max-w-7xl lg:px-8">
-                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-6">Our Shops</h2>
+            {/* Sticky Search Bar (Mobile Only) */}
+            <div className="sticky top-0 z-30 bg-white px-4 py-4 shadow-sm md:hidden">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Cari menu atau kantin..."
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 transition-all outline-none"
+                    />
+                </div>
+            </div>
 
+            {/* Content */}
+            <div className="p-4">
                 {isLoading ? (
-                    <div className="text-center">Loading shops...</div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 xl:gap-x-8">
-                        {shops.map((shop) => (
-                            <Link key={shop.id} to={`/menu?shop_id=${shop.id}`} className="group">
-                                <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg bg-gray-200 xl:aspect-h-8 xl:aspect-w-7">
-                                    <img
-                                        src={shop.image_logo ? `/storage/${shop.image_logo}` : 'https://placehold.co/300x300?text=No+Image'}
-                                        alt={shop.name}
-                                        className="h-full w-full object-cover object-center group-hover:opacity-75"
-                                    />
-                                </div>
-                                <h3 className="mt-4 text-lg font-medium text-gray-900">{shop.name}</h3>
-                                <p className="mt-1 text-sm text-gray-500">{shop.description}</p>
-                                <span className={`mt-2 inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${shop.status === 'open'
-                                        ? 'bg-green-50 text-green-700 ring-green-600/20'
-                                        : 'bg-red-50 text-red-700 ring-red-600/20'
-                                    }`}>
-                                    {shop.status.toUpperCase()}
-                                </span>
-                            </Link>
-                        ))}
+                    <div className="flex flex-col items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-sm text-gray-500">Memuat menu lezat...</p>
                     </div>
+                ) : (
+                    <>
+                        {menus.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                {menus
+                                    .filter(menu =>
+                                        menu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        menu.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        menu.shop?.name.toLowerCase().includes(searchQuery.toLowerCase())
+                                    )
+                                    .map((menu) => (
+                                        <MenuCard key={menu.id} menu={menu} />
+                                    ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center opacity-75">
+                                <UtensilsCrossed className="h-12 w-12 text-gray-300 mb-3" />
+                                <p className="font-medium text-gray-900">Menu tidak ditemukan</p>
+                                <p className="text-sm text-gray-500">Coba cari dengan kata kunci lain</p>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

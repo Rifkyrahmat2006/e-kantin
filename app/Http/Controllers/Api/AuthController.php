@@ -32,6 +32,7 @@ class AuthController extends Controller
                 'name' => $customer->name,
                 'email' => $customer->email,
                 'role' => 'customer',
+                'avatar_url' => null,
             ],
             'token' => $token,
         ], 201);
@@ -67,6 +68,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => 'admin',
+                    'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
                 ],
                 'token' => $token,
             ]);
@@ -90,6 +92,7 @@ class AuthController extends Controller
                 'name' => $customer->name,
                 'email' => $customer->email,
                 'role' => 'customer',
+                'avatar_url' => $customer->avatar ? asset('storage/' . $customer->avatar) : null,
             ],
             'token' => $token,
         ]);
@@ -104,7 +107,8 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         // Revoke token if exists (for API/Sanctum)
-        if ($request->user()) {
+        // Revoke token if exists (for API/Sanctum)
+        if ($request->user() && $request->user()->currentAccessToken()) {
             $request->user()->currentAccessToken()->delete();
         }
 
@@ -136,7 +140,89 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $role,
+                'role' => $role,
+                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
             ],
+        ]);
+    }
+    /**
+     * Update customer profile (avatar and name)
+     */
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'avatar' => 'nullable|image|max:2048', // Max 2MB
+        ]);
+
+        $user = $request->user();
+        $user->name = $request->name;
+
+        if ($request->hasFile('avatar')) {
+            // Delete old avatar if exists
+            if ($user->avatar && \Illuminate\Support\Facades\Storage::exists('public/' . $user->avatar)) {
+                \Illuminate\Support\Facades\Storage::delete('public/' . $user->avatar);
+            }
+
+            $path = $request->file('avatar')->store('avatars', 'public');
+            
+            // Optimize the uploaded image
+            try {
+                \Spatie\LaravelImageOptimizer\Facades\ImageOptimizer::optimize(storage_path('app/public/' . $path));
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                \Illuminate\Support\Facades\Log::error('Image optimization failed: ' . $e->getMessage());
+            }
+
+            // Store relative path
+            $user->avatar = $path;
+        }
+
+        // Handle avatar removal
+        if ($request->boolean('remove_avatar')) {
+             if ($user->avatar && \Illuminate\Support\Facades\Storage::exists('public/' . $user->avatar)) {
+                \Illuminate\Support\Facades\Storage::delete('public/' . $user->avatar);
+            }
+            $user->avatar = null;
+        }
+
+        $user->save();
+
+        return response()->json([
+            'message' => 'Profil berhasil diperbarui',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user instanceof \App\Models\User ? 'admin' : 'customer',
+                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+            ],
+        ]);
+    }
+
+    /**
+     * Change customer password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Password lama tidak sesuai.'],
+            ]);
+        }
+
+        $user->password = $request->new_password; // Will be hashed by mutator
+        $user->save();
+
+        return response()->json([
+            'message' => 'Password berhasil diubah',
         ]);
     }
 }

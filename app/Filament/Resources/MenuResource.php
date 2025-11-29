@@ -42,6 +42,11 @@ class MenuResource extends Resource
                     ->required()
                     ->numeric()
                     ->default(0),
+                Forms\Components\FileUpload::make('image')
+                    ->image()
+                    ->directory('menus')
+                    ->disk('public')
+                    ->columnSpanFull(),
                 Forms\Components\Textarea::make('description')
                     ->columnSpanFull(),
                 Forms\Components\Select::make('status')
@@ -67,6 +72,7 @@ class MenuResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+                Tables\Columns\ImageColumn::make('image'),
                 Tables\Columns\TextColumn::make('price')
                     ->numeric(
                         decimalPlaces: 0,

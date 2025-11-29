@@ -16,10 +16,21 @@ class MenuController extends Controller
     {
         $query = Menu::where('status', 'available')
             ->where('stock', '>', 0)
-            ->with('category');
+            ->where('stock', '>', 0)
+            ->with(['category', 'shop']);
 
         if ($request->has('shop_id')) {
             $query->where('shop_id', $request->shop_id);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                    ->orWhereHas('shop', function ($q) use ($search) {
+                        $q->where('name', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
         $menus = $query->get();

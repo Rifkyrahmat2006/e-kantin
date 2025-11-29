@@ -1,23 +1,29 @@
-import { Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ShoppingBag } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
-import { ShoppingCart } from 'lucide-react';
+
 
 export default function FloatingCart() {
     const { totalItems } = useCart();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Don't show on cart or checkout pages
+    if (location.pathname === '/cart' || location.pathname === '/checkout' || totalItems === 0) {
+        return null;
+    }
 
     return (
-        <Link
-            to="/cart"
-            className="fixed bottom-8 right-8 z-50 flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-transform hover:scale-110 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-            <div className="relative">
-                <ShoppingCart className="h-8 w-8" />
-                {totalItems > 0 && (
-                    <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                        {totalItems}
-                    </span>
-                )}
-            </div>
-        </Link>
+        <div className="fixed bottom-24 right-4 z-40 md:bottom-8 md:right-8">
+            <button
+                onClick={() => navigate('/cart')}
+                className="relative bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all transform active:scale-[0.95] flex items-center justify-center"
+            >
+                <ShoppingBag className="h-6 w-6" />
+                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold h-6 w-6 flex items-center justify-center rounded-full border-2 border-white">
+                    {totalItems}
+                </div>
+            </button>
+        </div>
     );
 }

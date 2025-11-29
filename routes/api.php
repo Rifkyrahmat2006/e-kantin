@@ -32,6 +32,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     // Route::post('/logout', [AuthController::class, 'logout']); // Moved to web.php
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/profile/update', [AuthController::class, 'updateProfile']);
+    Route::post('/profile/password', [AuthController::class, 'changePassword']);
     
     // Order routes
     Route::get('/orders', [OrderController::class, 'index']);

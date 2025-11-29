@@ -7,6 +7,7 @@ interface User {
     name: string;
     email: string;
     role: 'admin' | 'customer';
+    avatar_url?: string | null;
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
     login: (token: string, user: User) => void;
     logout: () => Promise<void>;
     register: (data: any) => Promise<void>;
+    updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,7 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading,
             login,
             logout,
-            register
+            register,
+            updateUser: (user: User) => {
+                setUser(user);
+                localStorage.setItem('user_data', JSON.stringify(user));
+            }
         }}>
             {children}
         </AuthContext.Provider>

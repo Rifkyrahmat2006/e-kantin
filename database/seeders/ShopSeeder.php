@@ -16,9 +16,9 @@ class ShopSeeder extends Seeder
     {
         // Shop 1: Warung Bu Tini
         $owner1 = User::firstOrCreate(
-            ['email' => 'tini@kantin.com'],
+            ['email' => 'eddy@kantin.com'],
             [
-                'name' => 'Bu Tini',
+                'name' => 'Eddy',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
                 'role' => User::ROLE_TENANT_ADMIN,

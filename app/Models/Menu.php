@@ -18,6 +18,7 @@ class Menu extends Model
         'price',
         'stock',
         'description',
+        'image',
         'status',
     ];
 
@@ -31,6 +32,15 @@ class Menu extends Model
     // Status constants
     const STATUS_AVAILABLE = 'available';
     const STATUS_UNAVAILABLE = 'unavailable';
+
+    // Appends
+    protected $appends = ['image_url'];
+
+    // Accessors
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? url('storage/' . $this->image) : null;
+    }
 
     // Relationships
     public function category()
@@ -46,5 +56,22 @@ class Menu extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    protected static function booted()
+    {
+        static::saved(function ($menu) {
+            if ($menu->wasChanged('image') && $menu->image) {
+                try {
+                    // Assuming default filesystem is 'public'
+                    $path = storage_path('app/public/' . $menu->image);
+                    if (file_exists($path)) {
+                        \Spatie\LaravelImageOptimizer\Facades\ImageOptimizer::optimize($path);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Menu image optimization failed: ' . $e->getMessage());
+                }
+            }
+        });
     }
 }

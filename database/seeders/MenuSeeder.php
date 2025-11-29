@@ -12,7 +12,7 @@ class MenuSeeder extends Seeder
      */
     public function run(): void
     {
-        $shop1 = \App\Models\Shop::where('name', 'Warung Bu Tini')->first()->id;
+        $shop1 = \App\Models\Shop::where('name', 'Warung Masse')->first()->id;
         $shop2 = \App\Models\Shop::where('name', 'Pojok Jus')->first()->id;
         $shop3 = \App\Models\Shop::where('name', 'Snack Corner')->first()->id;
 

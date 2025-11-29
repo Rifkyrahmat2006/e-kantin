@@ -13,6 +13,7 @@ class Shop extends Model
         'name',
         'owner_user_id',
         'description',
+        'image',
         'image_logo',
         'status',
     ];
@@ -20,6 +21,15 @@ class Shop extends Model
     // Status constants
     const STATUS_OPEN = 'open';
     const STATUS_CLOSED = 'closed';
+
+    // Appends
+    protected $appends = ['image_url'];
+
+    // Accessors
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? url('storage/' . $this->image) : null;
+    }
 
     // Relationships
     public function owner()
@@ -35,5 +45,21 @@ class Shop extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    protected static function booted()
+    {
+        static::saved(function ($shop) {
+            if ($shop->wasChanged('image') && $shop->image) {
+                try {
+                    $path = storage_path('app/public/' . $shop->image);
+                    if (file_exists($path)) {
+                        \Spatie\LaravelImageOptimizer\Facades\ImageOptimizer::optimize($path);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Shop image optimization failed: ' . $e->getMessage());
+                }
+            }
+        });
     }
 }

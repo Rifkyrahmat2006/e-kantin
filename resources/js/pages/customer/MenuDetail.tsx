@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import api from '../../lib/api';
-import { ChevronLeft, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { ChevronLeft, Minus, Plus, ShoppingCart, Store } from 'lucide-react';
 import { formatRupiah } from '../../utils/formatRupiah';
 
 interface Menu {
@@ -11,10 +11,15 @@ interface Menu {
     description: string;
     price: number;
     menu_category_id: number;
-    image?: string;
+    image_url: string | null;
     status: string;
     stock: number;
+    shop_id: number;
     category?: {
+        id: number;
+        name: string;
+    };
+    shop?: {
         id: number;
         name: string;
     };
@@ -63,7 +68,8 @@ export default function MenuDetail() {
                 name: menu.name,
                 price: Number(menu.price),
                 quantity: quantity,
-                image: menu.image
+                image: menu.image_url || undefined,
+                shop_id: menu.shop_id
             });
             navigate('/cart');
         }
@@ -71,7 +77,7 @@ export default function MenuDetail() {
 
     if (loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-screen items-center justify-center bg-white">
                 <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-blue-600"></div>
             </div>
         );
@@ -79,9 +85,9 @@ export default function MenuDetail() {
 
     if (error || !menu) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center">
-                <p className="text-red-500">{error || 'Menu not found'}</p>
-                <button onClick={() => navigate(-1)} className="mt-4 text-blue-600 hover:underline">
+            <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4 text-center">
+                <p className="text-red-500 mb-4">{error || 'Menu not found'}</p>
+                <button onClick={() => navigate(-1)} className="text-blue-600 font-medium hover:underline">
                     Go Back
                 </button>
             </div>
@@ -89,80 +95,87 @@ export default function MenuDetail() {
     }
 
     return (
-        <div className="bg-white">
-            <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-                <Link to="/menu" className="mb-8 inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700">
-                    <ChevronLeft className="mr-1 h-5 w-5" />
-                    Back to Menu
-                </Link>
+        <div className="min-h-screen bg-white md:h-screen md:overflow-hidden">
+            <div className="grid md:grid-cols-2 h-full">
+                {/* Left Side: Image */}
+                <div className="relative h-72 md:h-full w-full bg-gray-200">
+                    <img
+                        src={menu.image_url || 'https://placehold.co/600x600?text=No+Image'}
+                        alt={menu.name}
+                        className="h-full w-full object-cover"
+                    />
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="absolute top-4 left-4 rounded-full bg-white/80 p-2 backdrop-blur-sm shadow-sm hover:bg-white transition-colors"
+                    >
+                        <ChevronLeft className="h-6 w-6 text-gray-900" />
+                    </button>
+                </div>
 
-                <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-                    {/* Image gallery */}
-                    <div className="flex flex-col-reverse">
-                        <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-lg bg-gray-100 sm:aspect-h-2 sm:aspect-w-3">
-                            <div className="flex h-full items-center justify-center bg-gray-200 text-gray-500">
-                                <span className="text-4xl">No Image</span>
+                {/* Right Side: Content */}
+                <div className="flex flex-col h-full md:overflow-y-auto relative bg-white -mt-6 md:mt-0 rounded-t-3xl md:rounded-none shadow-lg md:shadow-none">
+                    <div className="flex-1 p-6 md:p-8 lg:p-12">
+                        <div className="mb-8">
+                            <div className="flex items-start justify-between mb-2">
+                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">{menu.name}</h1>
+                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${menu.status === 'available' && menu.stock > 0
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                    }`}>
+                                    {menu.status === 'available' && menu.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                                </span>
                             </div>
+                            <p className="text-2xl md:text-3xl font-bold text-blue-600">{formatRupiah(menu.price)}</p>
+                        </div>
+
+                        {/* Shop Info */}
+                        <div className="mb-8 flex items-center space-x-4 rounded-2xl bg-gray-50 p-4 border border-gray-100">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                                <Store className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-gray-900">Sold by</p>
+                                <p className="text-base font-semibold text-gray-900">Kantin Teknik</p>
+                            </div>
+                        </div>
+
+                        <div className="mb-8">
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">Description</h3>
+                            <p className="text-base leading-relaxed text-gray-600 whitespace-pre-line">
+                                {menu.description}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Product info */}
-                    <div className="mt-10 px-4 sm:mt-16 sm:px-0 lg:mt-0">
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">{menu.name}</h1>
-
-                        <div className="mt-3">
-                            <h2 className="sr-only">Product information</h2>
-                            <p className="text-3xl tracking-tight text-gray-900">{formatRupiah(menu.price)}</p>
-                        </div>
-
-                        <div className="mt-3">
-                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${menu.status === 'available' && menu.stock > 0
-                                    ? 'bg-green-50 text-green-700 ring-green-600/20'
-                                    : 'bg-red-50 text-red-700 ring-red-600/20'
-                                }`}>
-                                {menu.status === 'available' && menu.stock > 0 ? 'In Stock' : 'Out of Stock'}
-                            </span>
-                            <span className="ml-2 text-sm text-gray-500">({menu.stock} available)</span>
-                        </div>
-
-                        <div className="mt-6">
-                            <h3 className="sr-only">Description</h3>
-                            <div className="space-y-6 text-base text-gray-700">
-                                <p>{menu.description}</p>
+                    {/* Footer Actions */}
+                    <div className="border-t border-gray-200 bg-white p-4 md:p-8 sticky bottom-0 z-10">
+                        <div className="flex items-center gap-4 max-w-xl mx-auto md:mx-0">
+                            <div className="flex items-center rounded-xl border border-gray-200 bg-gray-50">
+                                <button
+                                    type="button"
+                                    onClick={() => handleQuantityChange(-1)}
+                                    className="p-3 md:p-4 text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                                    disabled={quantity <= 1}
+                                >
+                                    <Minus className="h-5 w-5" />
+                                </button>
+                                <span className="w-12 text-center font-bold text-lg text-gray-900">{quantity}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => handleQuantityChange(1)}
+                                    className="p-3 md:p-4 text-gray-600 hover:text-gray-900 disabled:opacity-50 transition-colors"
+                                    disabled={quantity >= menu.stock}
+                                >
+                                    <Plus className="h-5 w-5" />
+                                </button>
                             </div>
-                        </div>
-
-                        <div className="mt-10">
-                            <div className="flex items-center space-x-4">
-                                <span className="text-sm font-medium text-gray-700">Quantity</span>
-                                <div className="flex items-center rounded-md border border-gray-300">
-                                    <button
-                                        type="button"
-                                        onClick={() => handleQuantityChange(-1)}
-                                        className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                                        disabled={quantity <= 1}
-                                    >
-                                        <Minus className="h-4 w-4" />
-                                    </button>
-                                    <span className="w-12 text-center text-gray-900">{quantity}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleQuantityChange(1)}
-                                        className="p-2 text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                                        disabled={quantity >= menu.stock}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            </div>
-
                             <button
                                 type="button"
                                 onClick={handleAddToCart}
                                 disabled={menu.status !== 'available' || menu.stock === 0}
-                                className="mt-8 flex w-full items-center justify-center rounded-md border border-transparent bg-blue-600 px-8 py-3 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-400"
+                                className="flex-1 flex items-center justify-center rounded-xl bg-blue-600 px-6 py-4 text-base md:text-lg font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none active:scale-[0.98] transition-all"
                             >
-                                <ShoppingCart className="mr-2 h-5 w-5" />
+                                <ShoppingCart className="mr-2 h-5 w-5 md:h-6 md:w-6" />
                                 Add to Cart
                             </button>
                         </div>

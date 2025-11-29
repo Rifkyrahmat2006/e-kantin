@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import api from '../lib/api';
 
 export interface CartItem {
@@ -26,6 +27,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const { isAuthenticated } = useAuth();
+    const { showToast } = useToast();
 
     // Load cart from local storage or API
     useEffect(() => {
@@ -62,33 +64,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }, [items, isAuthenticated]);
 
     const addToCart = async (newItem: CartItem) => {
-        // Check if item belongs to the same shop as existing items
-        if (items.length > 0 && items[0].shop_id !== newItem.shop_id) {
-            if (!window.confirm('You can only order from one shop at a time. Clear cart and add this item?')) {
-                return;
-            }
-            await clearCart();
-            // We need to wait for state update or manually pass empty array to next step.
-            // For simplicity, we'll just proceed assuming clearCart works or we force it.
-            setItems([]); // Force clear locally first
-        }
+        // Restriction removed to allow multi-tenant orders
 
         // Optimistic update
         setItems(prevItems => {
-            // Double check shop_id (though we cleared it above if needed)
-            if (prevItems.length > 0 && prevItems[0].shop_id !== newItem.shop_id) {
-                return [newItem]; // Should have been handled, but safety net
-            }
-
             const existingItemIndex = prevItems.findIndex(item => item.id === newItem.id);
             if (existingItemIndex >= 0) {
                 const updatedItems = [...prevItems];
-                updatedItems[existingItemIndex].quantity += newItem.quantity;
+                updatedItems[existingItemIndex] = {
+                    ...updatedItems[existingItemIndex],
+                    quantity: updatedItems[existingItemIndex].quantity + newItem.quantity
+                };
                 return updatedItems;
             } else {
                 return [...prevItems, newItem];
             }
         });
+
+        showToast('Item added to cart', 'success');
 
         if (isAuthenticated) {
             try {
@@ -98,12 +91,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 });
             } catch (error) {
                 console.error('Failed to add item to server cart:', error);
+                showToast('Failed to sync with server', 'warning');
             }
         }
     };
 
     const removeFromCart = async (itemId: number) => {
         setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        showToast('Item removed from cart', 'info');
 
         if (isAuthenticated) {
             try {
