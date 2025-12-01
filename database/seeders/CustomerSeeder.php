@@ -13,7 +13,7 @@ class CustomerSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('customers')->insert([
+        $customers = [
             [
                 'name' => 'Budi Santoso',
                 'email' => 'budi@example.com',
@@ -59,6 +59,13 @@ class CustomerSeeder extends Seeder
                 'notes' => null,
                 'created_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($customers as $customer) {
+            DB::table('customers')->updateOrInsert(
+                ['email' => $customer['email']],
+                $customer
+            );
+        }
     }
 }

@@ -13,7 +13,7 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('admins')->insert([
+        $admins = [
             [
                 'name' => 'Administrator',
                 'username' => 'admin',
@@ -30,6 +30,13 @@ class AdminSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($admins as $admin) {
+            DB::table('admins')->updateOrInsert(
+                ['username' => $admin['username']],
+                $admin
+            );
+        }
     }
 }
