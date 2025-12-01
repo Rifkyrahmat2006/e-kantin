@@ -26,7 +26,7 @@ class ShopSeeder extends Seeder
         );
 
         Shop::firstOrCreate(
-            ['name' => 'Warung Bu Tini'],
+            ['name' => 'Warung Masse'],
             [
                 'owner_user_id' => $owner1->id,
                 'description' => 'Menyediakan aneka masakan rumahan yang lezat dan higienis.',
