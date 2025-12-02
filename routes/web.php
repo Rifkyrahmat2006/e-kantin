@@ -17,7 +17,7 @@ Route::get('/login', function () {
 })->name('login');
 
 Route::post('/login', [App\Http\Controllers\Api\AuthController::class, 'login']);
-Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout']);
+Route::post('/logout', [App\Http\Controllers\Api\AuthController::class, 'logout'])->name('logout');
 
 Route::get('/register', function () {
     return view('customer');
