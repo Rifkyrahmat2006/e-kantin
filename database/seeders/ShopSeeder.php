@@ -36,9 +36,9 @@ class ShopSeeder extends Seeder
 
         // Shop 2: Pojok Jus
         $owner2 = User::firstOrCreate(
-            ['email' => 'jus@kantin.com'],
+            ['email' => 'bude@kantin.com'],
             [
-                'name' => 'Mas Budi (Jus)',
+                'name' => 'Warung Bude',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
                 'role' => User::ROLE_TENANT_ADMIN,
@@ -46,7 +46,7 @@ class ShopSeeder extends Seeder
         );
 
         Shop::firstOrCreate(
-            ['name' => 'Pojok Jus'],
+            ['name' => 'Warung Bude'],
             [
                 'owner_user_id' => $owner2->id,
                 'description' => 'Aneka jus buah segar dan minuman dingin.',
@@ -56,9 +56,9 @@ class ShopSeeder extends Seeder
 
         // Shop 3: Snack Corner
         $owner3 = User::firstOrCreate(
-            ['email' => 'snack@kantin.com'],
+            ['email' => 'tengah@kantin.com'],
             [
-                'name' => 'Mba Sari (Snack)',
+                'name' => 'Warung Tengah',
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
                 'role' => User::ROLE_TENANT_ADMIN,
@@ -66,7 +66,7 @@ class ShopSeeder extends Seeder
         );
 
         Shop::firstOrCreate(
-            ['name' => 'Snack Corner'],
+            ['name' => 'Warung Tengah'],
             [
                 'owner_user_id' => $owner3->id,
                 'description' => 'Camilan ringan dan gorengan hangat.',
