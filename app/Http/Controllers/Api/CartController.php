@@ -15,7 +15,7 @@ class CartController extends Controller
     public function index(Request $request)
     {
         $items = CartItem::where('user_id', $request->user()->id)
-            ->with('menu')
+            ->with(['menu', 'menu.shop'])
             ->get();
 
         // Transform to match frontend CartItem interface
@@ -26,6 +26,8 @@ class CartController extends Controller
                 'price' => $item->menu->price,
                 'quantity' => $item->quantity,
                 'image' => $item->menu->image,
+                'shop_id' => $item->menu->shop_id,
+                'shop_name' => $item->menu->shop->name ?? 'Unknown Shop',
             ];
         });
 

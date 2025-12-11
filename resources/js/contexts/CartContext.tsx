@@ -10,22 +10,35 @@ export interface CartItem {
     quantity: number;
     image?: string;
     shop_id: number;
+    shop_name?: string;
 }
 
 interface CartContextType {
     items: CartItem[];
     totalItems: number;
     totalPrice: number;
+    selectedItems: Set<number>;
+    selectedTotalPrice: number;
+    selectedItemsCount: number;
     addToCart: (item: CartItem) => void;
     removeFromCart: (itemId: number) => void;
     updateQuantity: (itemId: number, quantity: number) => void;
     clearCart: () => void;
+    toggleItemSelection: (itemId: number) => void;
+    toggleTenantSelection: (shopId: number) => void;
+    selectAll: () => void;
+    deselectAll: () => void;
+    isItemSelected: (itemId: number) => boolean;
+    isTenantFullySelected: (shopId: number) => boolean;
+    isTenantPartiallySelected: (shopId: number) => boolean;
+    getSelectedItems: () => CartItem[];
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
+    const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
     const { isAuthenticated } = useAuth();
     const { showToast } = useToast();
 
@@ -36,6 +49,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 try {
                     const response = await api.get('/cart');
                     setItems(response.data.items);
+                    // Auto-select all items when loading
+                    setSelectedItems(new Set(response.data.items.map((item: CartItem) => item.id)));
                 } catch (error) {
                     console.error('Failed to fetch cart from server:', error);
                 }
@@ -43,12 +58,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 const storedCart = localStorage.getItem('cart_items');
                 if (storedCart) {
                     try {
-                        setItems(JSON.parse(storedCart));
+                        const parsedItems = JSON.parse(storedCart);
+                        setItems(parsedItems);
+                        // Auto-select all items
+                        setSelectedItems(new Set(parsedItems.map((item: CartItem) => item.id)));
                     } catch (e) {
                         console.error('Failed to parse cart items', e);
                     }
                 } else {
                     setItems([]);
+                    setSelectedItems(new Set());
                 }
             }
         };
@@ -63,9 +82,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
     }, [items, isAuthenticated]);
 
-    const addToCart = async (newItem: CartItem) => {
-        // Restriction removed to allow multi-tenant orders
+    // Clean up selectedItems when items change (remove selections for removed items)
+    useEffect(() => {
+        const itemIds = new Set(items.map(item => item.id));
+        setSelectedItems(prev => {
+            const newSelected = new Set<number>();
+            prev.forEach(id => {
+                if (itemIds.has(id)) {
+                    newSelected.add(id);
+                }
+            });
+            return newSelected;
+        });
+    }, [items]);
 
+    const addToCart = async (newItem: CartItem) => {
         // Optimistic update
         setItems(prevItems => {
             const existingItemIndex = prevItems.findIndex(item => item.id === newItem.id);
@@ -80,6 +111,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 return [...prevItems, newItem];
             }
         });
+
+        // Auto-select new item
+        setSelectedItems(prev => new Set([...prev, newItem.id]));
 
         showToast('Item added to cart', 'success');
 
@@ -98,6 +132,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const removeFromCart = async (itemId: number) => {
         setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(itemId);
+            return newSet;
+        });
         showToast('Item removed from cart', 'info');
 
         if (isAuthenticated) {
@@ -132,6 +171,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const clearCart = async () => {
         setItems([]);
+        setSelectedItems(new Set());
 
         if (isAuthenticated) {
             try {
@@ -144,18 +184,92 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    // Selection functions
+    const toggleItemSelection = (itemId: number) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(itemId)) {
+                newSet.delete(itemId);
+            } else {
+                newSet.add(itemId);
+            }
+            return newSet;
+        });
+    };
+
+    const toggleTenantSelection = (shopId: number) => {
+        const tenantItems = items.filter(item => item.shop_id === shopId);
+        const allSelected = tenantItems.every(item => selectedItems.has(item.id));
+
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (allSelected) {
+                // Deselect all tenant items
+                tenantItems.forEach(item => newSet.delete(item.id));
+            } else {
+                // Select all tenant items
+                tenantItems.forEach(item => newSet.add(item.id));
+            }
+            return newSet;
+        });
+    };
+
+    const selectAll = () => {
+        setSelectedItems(new Set(items.map(item => item.id)));
+    };
+
+    const deselectAll = () => {
+        setSelectedItems(new Set());
+    };
+
+    const isItemSelected = (itemId: number) => selectedItems.has(itemId);
+
+    const isTenantFullySelected = (shopId: number) => {
+        const tenantItems = items.filter(item => item.shop_id === shopId);
+        return tenantItems.length > 0 && tenantItems.every(item => selectedItems.has(item.id));
+    };
+
+    const isTenantPartiallySelected = (shopId: number) => {
+        const tenantItems = items.filter(item => item.shop_id === shopId);
+        const selectedCount = tenantItems.filter(item => selectedItems.has(item.id)).length;
+        return selectedCount > 0 && selectedCount < tenantItems.length;
+    };
+
+    const getSelectedItems = () => {
+        return items.filter(item => selectedItems.has(item.id));
+    };
+
     const totalItems = items.reduce((total, item) => total + item.quantity, 0);
     const totalPrice = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    const selectedTotalPrice = items
+        .filter(item => selectedItems.has(item.id))
+        .reduce((total, item) => total + (item.price * item.quantity), 0);
+    
+    const selectedItemsCount = items
+        .filter(item => selectedItems.has(item.id))
+        .reduce((total, item) => total + item.quantity, 0);
 
     return (
         <CartContext.Provider value={{
             items,
             totalItems,
             totalPrice,
+            selectedItems,
+            selectedTotalPrice,
+            selectedItemsCount,
             addToCart,
             removeFromCart,
             updateQuantity,
-            clearCart
+            clearCart,
+            toggleItemSelection,
+            toggleTenantSelection,
+            selectAll,
+            deselectAll,
+            isItemSelected,
+            isTenantFullySelected,
+            isTenantPartiallySelected,
+            getSelectedItems
         }}>
             {children}
         </CartContext.Provider>
