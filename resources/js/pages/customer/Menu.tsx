@@ -130,10 +130,9 @@ export default function Menu() {
                 </h2>
 
                 {isLoading ? (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="h-48 rounded-2xl bg-gray-200 animate-pulse"></div>
-                        ))}
+                    <div className="flex flex-col items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-sm text-gray-500">{shopId ? 'Memuat menu...' : 'Memuat daftar kantin...'}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

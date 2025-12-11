@@ -106,8 +106,9 @@ export default function OrderHistory() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="flex flex-col min-h-screen items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-sm text-gray-500">Memuat riwayat pesanan...</p>
             </div>
         );
     }
