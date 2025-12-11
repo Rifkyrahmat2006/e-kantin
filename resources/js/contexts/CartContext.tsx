@@ -11,6 +11,7 @@ export interface CartItem {
     image?: string;
     shop_id: number;
     shop_name?: string;
+    stock?: number; // Available stock for validation
 }
 
 interface CartContextType {
@@ -185,7 +186,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
 
     // Selection functions
+    const isItemInStock = (item: CartItem) => {
+        if (item.stock === undefined) return true;
+        return item.stock > 0 && item.quantity <= item.stock;
+    };
+
     const toggleItemSelection = (itemId: number) => {
+        const item = items.find(i => i.id === itemId);
+        if (item && !isItemInStock(item)) {
+            return; // Don't allow selection of out-of-stock items
+        }
+        
         setSelectedItems(prev => {
             const newSet = new Set(prev);
             if (newSet.has(itemId)) {
@@ -198,7 +209,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
 
     const toggleTenantSelection = (shopId: number) => {
-        const tenantItems = items.filter(item => item.shop_id === shopId);
+        const tenantItems = items.filter(item => item.shop_id === shopId && isItemInStock(item));
         const allSelected = tenantItems.every(item => selectedItems.has(item.id));
 
         setSelectedItems(prev => {
@@ -207,7 +218,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 // Deselect all tenant items
                 tenantItems.forEach(item => newSet.delete(item.id));
             } else {
-                // Select all tenant items
+                // Select all tenant items (only in-stock ones)
                 tenantItems.forEach(item => newSet.add(item.id));
             }
             return newSet;
@@ -215,7 +226,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     };
 
     const selectAll = () => {
-        setSelectedItems(new Set(items.map(item => item.id)));
+        // Only select items that are in stock
+        const inStockItems = items.filter(isItemInStock);
+        setSelectedItems(new Set(inStockItems.map(item => item.id)));
     };
 
     const deselectAll = () => {

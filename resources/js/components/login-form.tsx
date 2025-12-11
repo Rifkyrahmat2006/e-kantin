@@ -13,6 +13,7 @@ import { useNavigate, Link } from "react-router-dom"
 import api from "../lib/api"
 import axios from "axios"
 import { Loader2 } from "lucide-react"
+import { GoogleLogin } from '@react-oauth/google';
 
 export function LoginForm({
   className,
@@ -61,6 +62,28 @@ export function LoginForm({
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    setError('');
+    
+    try {
+        await api.get('/sanctum/csrf-cookie');
+        
+        const response = await api.post('/auth/google', {
+            credential: credentialResponse.credential,
+        });
+
+        const { token, user } = response.data;
+        login(token, user);
+        navigate('/');
+    } catch (err: any) {
+        console.error('Google login error:', err);
+        setError(err.response?.data?.message || 'Failed to login with Google');
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit} {...props}>
       <FieldGroup>
@@ -76,6 +99,25 @@ export function LoginForm({
             {error}
           </div>
         )}
+
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setError('Google Login Failed')}
+              useOneTap
+              theme="outline"
+              size="large"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
+          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+            <span className="relative z-10 bg-background px-2 text-muted-foreground bg-white">
+              Or continue with
+            </span>
+          </div>
+        </div>
 
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>

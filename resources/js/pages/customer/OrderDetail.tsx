@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle2, XCircle, MapPin, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle2, XCircle, MapPin, ShoppingBag, Store, CreditCard, ChevronRight, Loader2 } from 'lucide-react';
 import api from '../../lib/api';
 import { formatRupiah } from '../../utils/formatRupiah';
 
@@ -15,6 +15,12 @@ interface OrderItem {
     };
 }
 
+interface Shop {
+    id: number;
+    name: string;
+    image_url: string | null;
+}
+
 interface Order {
     id: number;
     created_at: string;
@@ -23,6 +29,7 @@ interface Order {
     order_items: OrderItem[];
     payment_method?: string;
     notes?: string;
+    shop: Shop;
 }
 
 export default function OrderDetail() {
@@ -48,34 +55,61 @@ export default function OrderDetail() {
         }
     }, [id]);
 
-    const getStatusColor = (status: string) => {
+    const getStatusConfig = (status: string) => {
         switch (status) {
-            case 'completed':
-                return 'bg-green-100 text-green-700';
-            case 'pending':
-                return 'bg-yellow-100 text-yellow-700';
-            case 'cancelled':
-                return 'bg-red-100 text-red-700';
+            case 'COMPLETED':
+                return {
+                    color: 'bg-green-50 text-green-700 border-green-200',
+                    icon: <CheckCircle2 className="h-5 w-5 mr-2" />,
+                    label: 'Selesai',
+                    desc: 'Pesanan telah selesai'
+                };
+            case 'PENDING':
+                return {
+                    color: 'bg-orange-50 text-orange-700 border-orange-200',
+                    icon: <Clock className="h-5 w-5 mr-2" />,
+                    label: 'Belum Bayar',
+                    desc: 'Menunggu pembayaran Anda'
+                };
+            case 'PROCESSING':
+                return {
+                    color: 'bg-blue-50 text-blue-700 border-blue-200',
+                    icon: <Loader2 className="h-5 w-5 mr-2 animate-spin" />,
+                    label: 'Diproses',
+                    desc: 'Pesanan sedang disiapkan'
+                };
+            case 'CANCELLED':
+                return {
+                    color: 'bg-red-50 text-red-700 border-red-200',
+                    icon: <XCircle className="h-5 w-5 mr-2" />,
+                    label: 'Dibatalkan',
+                    desc: 'Pesanan dibatalkan'
+                };
             default:
-                return 'bg-gray-100 text-gray-700';
+                return {
+                    color: 'bg-gray-50 text-gray-700 border-gray-200',
+                    icon: <Clock className="h-5 w-5 mr-2" />,
+                    label: status,
+                    desc: 'Status pesanan'
+                };
         }
     };
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return <CheckCircle2 className="h-5 w-5 mr-2" />;
-            case 'cancelled':
-                return <XCircle className="h-5 w-5 mr-2" />;
-            default:
-                return <Clock className="h-5 w-5 mr-2" />;
+    const handlePayNow = () => {
+        if (order) {
+            navigate('/payment', {
+                state: {
+                    orderId: order.id,
+                    totalAmount: order.total_amount
+                }
+            });
         }
     };
 
     if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
         );
     }
@@ -94,54 +128,78 @@ export default function OrderDetail() {
         );
     }
 
+    const status = getStatusConfig(order.order_status);
+
     return (
         <div className="min-h-screen bg-gray-50 pb-24">
             {/* Header */}
-            <div className="bg-white px-4 py-4 shadow-sm sticky top-0 z-10">
-                <div className="flex items-center max-w-2xl mx-auto">
+            <div className="bg-white sticky top-0 z-10 shadow-sm border-b border-gray-100">
+                <div className="flex items-center max-w-2xl mx-auto px-4 py-4">
                     <button
                         onClick={() => navigate('/orders')}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
+                        className="p-2 -ml-2 mr-2 hover:bg-gray-50 rounded-full transition-colors"
                     >
                         <ArrowLeft className="h-6 w-6 text-gray-700" />
                     </button>
-                    <h1 className="ml-2 text-lg font-bold text-gray-900">Detail Pesanan</h1>
+                    <div>
+                        <h1 className="text-lg font-bold text-gray-900">Detail Pesanan</h1>
+                        <p className="text-xs text-gray-500">Order #{order.id}</p>
+                    </div>
                 </div>
             </div>
 
             <div className="max-w-2xl mx-auto p-4 space-y-4">
                 {/* Status Card */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm text-gray-500">No. Pesanan #{order.id}</span>
-                        <span className="text-sm text-gray-500">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-500">Status Pesanan</span>
+                        <span className="text-xs text-gray-400">
                             {new Date(order.created_at).toLocaleString('id-ID', {
-                                day: 'numeric',
-                                month: 'long',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                                day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
                             })}
                         </span>
                     </div>
-                    <div className={`flex items-center p-3 rounded-xl ${getStatusColor(order.order_status)}`}>
-                        {getStatusIcon(order.order_status)}
-                        <span className="font-medium capitalize">
-                            {order.order_status}
-                        </span>
+                    <div className={`flex items-center p-4 rounded-xl border ${status.color}`}>
+                        {status.icon}
+                        <div>
+                            <span className="font-bold block text-sm">{status.label}</span>
+                            <span className="text-xs opacity-80">{status.desc}</span>
+                        </div>
                     </div>
+                    
+                    {order.order_status === 'PENDING' && (
+                        <button
+                            onClick={handlePayNow}
+                            className="mt-4 w-full py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
+                            <CreditCard className="h-5 w-5" />
+                            Bayar Sekarang
+                        </button>
+                    )}
+                </div>
+
+                {/* Shop Info */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                        <Store className="h-6 w-6" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900">{order.shop?.name || 'Kantin Teknik'}</h3>
+                        <p className="text-xs text-gray-500">Kantin Fakultas Teknik</p>
+                    </div>
+                    <ChevronRight className="ml-auto h-5 w-5 text-gray-400" />
                 </div>
 
                 {/* Order Items */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                     <h2 className="font-bold text-gray-900 mb-4 flex items-center">
                         <ShoppingBag className="h-5 w-5 mr-2 text-blue-600" />
                         Daftar Menu
                     </h2>
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         {order.order_items.map((item) => (
-                            <div key={item.id} className="flex gap-3">
-                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                            <div key={item.id} className="flex gap-4">
+                                <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-100">
                                     {item.menu.image_url ? (
                                         <img
                                             src={item.menu.image_url}
@@ -154,16 +212,16 @@ export default function OrderDetail() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex-1">
-                                    <h3 className="font-medium text-gray-900 line-clamp-1">{item.menu.name}</h3>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        {item.quantity} x {formatRupiah(Number(item.unit_price))}
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-medium text-gray-900">
-                                        {formatRupiah(item.quantity * Number(item.unit_price))}
-                                    </p>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-sm text-gray-900 line-clamp-2">{item.menu.name}</h3>
+                                    <div className="flex justify-between items-end mt-1">
+                                        <p className="text-sm text-gray-500">
+                                            {item.quantity} x {formatRupiah(Number(item.unit_price))}
+                                        </p>
+                                        <p className="font-bold text-gray-900">
+                                            {formatRupiah(item.quantity * Number(item.unit_price))}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -171,9 +229,9 @@ export default function OrderDetail() {
                 </div>
 
                 {/* Payment Detail */}
-                <div className="bg-white rounded-2xl p-4 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
                     <h2 className="font-bold text-gray-900 mb-4">Rincian Pembayaran</h2>
-                    <div className="space-y-2 text-sm">
+                    <div className="space-y-3 text-sm">
                         <div className="flex justify-between text-gray-500">
                             <span>Total Harga ({order.order_items.length} menu)</span>
                             <span>{formatRupiah(Number(order.total_amount))}</span>
@@ -182,9 +240,9 @@ export default function OrderDetail() {
                             <span>Biaya Layanan</span>
                             <span>Rp 0</span>
                         </div>
-                        <div className="border-t border-dashed border-gray-200 my-2 pt-2 flex justify-between font-bold text-lg text-gray-900">
-                            <span>Total Bayar</span>
-                            <span>{formatRupiah(Number(order.total_amount))}</span>
+                        <div className="border-t border-dashed border-gray-200 mt-2 pt-3 flex justify-between items-center">
+                            <span className="font-medium text-gray-900">Total Bayar</span>
+                            <span className="font-bold text-lg text-blue-600">{formatRupiah(Number(order.total_amount))}</span>
                         </div>
                     </div>
                 </div>

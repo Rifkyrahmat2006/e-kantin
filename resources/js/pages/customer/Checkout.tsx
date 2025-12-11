@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import api from '../../lib/api';
@@ -22,7 +22,7 @@ const DELIVERY_LOCATIONS = [
 ];
 
 export default function Checkout() {
-    const { items, totalPrice, clearCart, getSelectedItems, selectedTotalPrice, selectedItemsCount } = useCart();
+    const { items, totalPrice, getSelectedItems, selectedTotalPrice, selectedItemsCount } = useCart();
     const navigate = useNavigate();
     const [deliveryLocation, setDeliveryLocation] = useState('');
     const [deliveryDescription, setDeliveryDescription] = useState('');
@@ -33,6 +33,19 @@ export default function Checkout() {
     // Use selected items for checkout
     const checkoutItems = getSelectedItems();
     const checkoutTotal = selectedTotalPrice;
+
+    // Group items by shop
+    const groupItemsByShop = (items: typeof checkoutItems) => {
+        const groups: Map<number, typeof checkoutItems> = new Map();
+        items.forEach(item => {
+            const shopId = item.shop_id;
+            if (!groups.has(shopId)) {
+                groups.set(shopId, []);
+            }
+            groups.get(shopId)!.push(item);
+        });
+        return groups;
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,24 +58,13 @@ export default function Checkout() {
             return;
         }
 
+        if (checkoutItems.length === 0) {
+            setError('Tidak ada item yang dipilih');
+            setIsLoading(false);
+            return;
+        }
+
         try {
-            let shopId = checkoutItems.length > 0 ? checkoutItems[0].shop_id : null;
-
-            if (!shopId && checkoutItems.length > 0) {
-                try {
-                    const menuRes = await api.get(`/menus/${checkoutItems[0].id}`);
-                    shopId = menuRes.data.menu.shop_id;
-                } catch (e) {
-                    console.error("Failed to fetch shop details", e);
-                }
-            }
-
-            if (!shopId) {
-                setError("Unable to determine shop for these items. Please remove them and try again.");
-                setIsLoading(false);
-                return;
-            }
-
             const locationName = DELIVERY_LOCATIONS.find(loc => loc.id === deliveryLocation)?.name || deliveryLocation;
             const fullNotes = [
                 `Lokasi: ${locationName}`,
@@ -70,28 +72,64 @@ export default function Checkout() {
                 notes ? `Catatan: ${notes}` : ''
             ].filter(Boolean).join(' | ');
 
-            await api.post('/orders', {
-                shop_id: shopId,
-                items: checkoutItems.map(item => ({
-                    menu_id: item.id,
-                    quantity: item.quantity
-                })),
-                table_number: locationName,
-                notes: fullNotes
-            });
+            // Group items by shop
+            const shopGroups = groupItemsByShop(checkoutItems);
+            const orderIds: number[] = [];
+            let totalAmount = 0;
 
-            clearCart();
-            navigate('/order-success');
+            // Create order for each shop
+            for (const [shopId, shopItems] of shopGroups) {
+                console.log(`Creating order for shop ${shopId} with ${shopItems.length} items`);
+                
+                const orderResponse = await api.post('/orders', {
+                    shop_id: shopId,
+                    items: shopItems.map(item => ({
+                        menu_id: item.id,
+                        quantity: item.quantity
+                    })),
+                    table_number: locationName,
+                    notes: fullNotes
+                });
+
+                orderIds.push(orderResponse.data.order.id);
+                totalAmount += parseFloat(orderResponse.data.order.total_amount);
+            }
+
+            console.log('Orders created:', orderIds);
+
+            // Navigate to payment page with first order (or handle multiple orders)
+            navigate('/payment', {
+                state: {
+                    orderId: orderIds[0], // Use first order for now
+                    orderIds: orderIds, // All order IDs
+                    totalAmount: totalAmount
+                }
+            });
         } catch (err: any) {
             console.error('Checkout error:', err);
-            setError('Gagal memproses pesanan. Silakan coba lagi.');
+            console.error('Error response:', JSON.stringify(err.response?.data, null, 2));
+            
+            // Handle validation errors
+            if (err.response?.data?.errors) {
+                const errors = err.response.data.errors;
+                const errorMessages = Object.values(errors).flat().join(', ');
+                setError(errorMessages);
+            } else {
+                setError(err.response?.data?.message || err.response?.data?.error || 'Gagal memproses pesanan. Silakan coba lagi.');
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Redirect if no items selected
+    useEffect(() => {
+        if (checkoutItems.length === 0) {
+            navigate('/cart');
+        }
+    }, [checkoutItems.length, navigate]);
+
     if (checkoutItems.length === 0) {
-        navigate('/cart');
         return null;
     }
 

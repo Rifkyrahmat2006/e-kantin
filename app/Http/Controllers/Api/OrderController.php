@@ -18,7 +18,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $orders = Order::where('customer_id', $request->user()->id)
-            ->with(['orderItems.menu'])
+            ->with(['orderItems.menu', 'shop'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -118,7 +118,7 @@ class OrderController extends Controller
     public function show(Request $request, $id)
     {
         $order = Order::where('customer_id', $request->user()->id)
-            ->with(['orderItems.menu', 'customer'])
+            ->with(['orderItems.menu', 'customer', 'shop'])
             ->findOrFail($id);
 
         return response()->json([

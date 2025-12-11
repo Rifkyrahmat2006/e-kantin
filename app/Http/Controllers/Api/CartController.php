@@ -28,6 +28,7 @@ class CartController extends Controller
                 'image' => $item->menu->image,
                 'shop_id' => $item->menu->shop_id,
                 'shop_name' => $item->menu->shop->name ?? 'Unknown Shop',
+                'stock' => $item->menu->stock, // Include stock for validation
             ];
         });
 

@@ -24,6 +24,7 @@ class Customer extends Authenticatable
         'table_number',
         'notes',
         'avatar',
+        'google_id',
     ];
 
     protected $hidden = [

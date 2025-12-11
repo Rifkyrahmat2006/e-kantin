@@ -68,7 +68,7 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => 'admin',
-                    'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'avatar_url' => $this->getAvatarUrl($user->avatar),
                 ],
                 'token' => $token,
             ]);
@@ -92,7 +92,7 @@ class AuthController extends Controller
                 'name' => $customer->name,
                 'email' => $customer->email,
                 'role' => 'customer',
-                'avatar_url' => $customer->avatar ? asset('storage/' . $customer->avatar) : null,
+                'avatar_url' => $this->getAvatarUrl($customer->avatar),
             ],
             'token' => $token,
         ]);
@@ -141,7 +141,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'role' => $role,
                 'role' => $role,
-                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'avatar_url' => $this->getAvatarUrl($user->avatar),
             ],
         ]);
     }
@@ -195,7 +195,7 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user instanceof \App\Models\User ? 'admin' : 'customer',
-                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'avatar_url' => $this->getAvatarUrl($user->avatar),
             ],
         ]);
     }
@@ -224,5 +224,23 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Password berhasil diubah',
         ]);
+    }
+
+    /**
+     * Get avatar URL - handles both external URLs (Google) and local storage paths
+     */
+    private function getAvatarUrl(?string $avatar): ?string
+    {
+        if (!$avatar) {
+            return null;
+        }
+
+        // If it's already a full URL (external like Google), return as-is
+        if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://')) {
+            return $avatar;
+        }
+
+        // Otherwise, it's a local storage path
+        return asset('storage/' . $avatar);
     }
 }

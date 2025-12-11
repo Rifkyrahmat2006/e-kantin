@@ -7,6 +7,7 @@ import Menu from './pages/customer/Menu';
 import MenuDetail from './pages/customer/MenuDetail';
 import Cart from './pages/customer/Cart';
 import Checkout from './pages/customer/Checkout';
+import Payment from './pages/customer/Payment';
 import OrderHistory from './pages/customer/OrderHistory';
 import OrderDetail from './pages/customer/OrderDetail';
 import OrderSuccess from './pages/customer/OrderSuccess';
@@ -18,10 +19,13 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { ToastProvider } from './contexts/ToastContext';
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 export default function CustomerApp() {
     return (
-        <AuthProvider>
-            <ToastProvider>
+        <GoogleOAuthProvider clientId="1084439484932-a53s4dafu0gtl0pb30ugkd6vesssjktq.apps.googleusercontent.com">
+            <AuthProvider>
+                <ToastProvider>
                 <CartProvider>
                     <BrowserRouter>
                         <MobileLayout>
@@ -38,6 +42,7 @@ export default function CustomerApp() {
                                 <Route element={<ProtectedRoute />}>
                                     <Route path="/cart" element={<Cart />} />
                                     <Route path="/checkout" element={<Checkout />} />
+                                    <Route path="/payment" element={<Payment />} />
                                     <Route path="/order-success" element={<OrderSuccess />} />
                                     <Route path="/orders" element={<OrderHistory />} />
                                     <Route path="/orders/:id" element={<OrderDetail />} />
@@ -51,6 +56,7 @@ export default function CustomerApp() {
                     </BrowserRouter>
                 </CartProvider>
             </ToastProvider>
-        </AuthProvider>
+            </AuthProvider>
+        </GoogleOAuthProvider>
     );
 }

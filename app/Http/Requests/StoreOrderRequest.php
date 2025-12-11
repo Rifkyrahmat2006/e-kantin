@@ -23,8 +23,8 @@ class StoreOrderRequest extends FormRequest
     {
         return [
             'shop_id' => 'required|exists:shops,id',
-            'table_number' => 'required|string|max:10',
-            'notes' => 'nullable|string|max:255',
+            'table_number' => 'required|string|max:100',
+            'notes' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.menu_id' => 'required|exists:menus,id',
             'items.*.quantity' => 'required|integer|min:1',

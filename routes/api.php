@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ShopController;
+use App\Http\Controllers\Api\PaymentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
 // Route::post('/login', [AuthController::class, 'login']); // Moved to web.php for session support
+Route::post('/auth/google', [App\Http\Controllers\Api\SocialAuthController::class, 'googleLogin']);
 
 // Public menu routes
 Route::get('/menus', [MenuController::class, 'index']);
@@ -26,6 +28,9 @@ Route::get('/menus/{id}', [MenuController::class, 'show']);
 // Public shop routes
 Route::get('/shops', [ShopController::class, 'index']);
 Route::get('/shops/{id}', [ShopController::class, 'show']);
+
+// Midtrans webhook (public, no auth)
+Route::post('/payment/notification', [PaymentController::class, 'handleNotification']);
 
 // Protected routes (require authentication)
 Route::middleware('auth:sanctum')->group(function () {
@@ -46,4 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/cart/{menuId}', [App\Http\Controllers\Api\CartController::class, 'update']);
     Route::delete('/cart/{menuId}', [App\Http\Controllers\Api\CartController::class, 'destroy']);
     Route::delete('/cart', [App\Http\Controllers\Api\CartController::class, 'clear']);
+
+    // Payment routes
+    Route::post('/payment/create-token', [PaymentController::class, 'createSnapToken']);
+    Route::post('/payment/update-status', [PaymentController::class, 'updateStatus']);
 });
+

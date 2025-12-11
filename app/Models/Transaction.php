@@ -32,6 +32,7 @@ class Transaction extends Model
     const METHOD_CASH = 'CASH';
     const METHOD_TRANSFER = 'TRANSFER';
     const METHOD_EWALLET = 'EWALLET';
+    const METHOD_MIDTRANS = 'MIDTRANS';
     const METHOD_OTHER = 'OTHER';
 
     // Payment status constants
