@@ -39,10 +39,10 @@ class OrderItemsRelationManager extends RelationManager
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('unit_price')
                     ->label('Unit Price')
-                    ->money('IDR'),
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.')),
                 Tables\Columns\TextColumn::make('subtotal')
                     ->label('Subtotal')
-                    ->money('IDR'),
+                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.')),
             ])
             ->filters([
                 //

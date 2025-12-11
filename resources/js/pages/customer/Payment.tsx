@@ -15,7 +15,8 @@ declare global {
 const MIDTRANS_CLIENT_KEY = import.meta.env.VITE_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-vV5SeV13lU54GLgK';
 
 interface PaymentState {
-    orderId: number;
+    orderId?: number; // For backwards compatibility
+    orderIds: number[];
     totalAmount: number;
 }
 
@@ -37,10 +38,13 @@ export default function Payment() {
 
     // Get order data from navigation state
     const paymentState = location.state as PaymentState | null;
+    
+    // Normalize orderIds - support both orderId (single) and orderIds (multiple)
+    const orderIds = paymentState?.orderIds || (paymentState?.orderId ? [paymentState.orderId] : []);
 
     // Load Snap script
     useEffect(() => {
-        if (!paymentState?.orderId) {
+        if (orderIds.length === 0) {
             navigate('/cart');
             return;
         }
@@ -81,13 +85,13 @@ export default function Payment() {
 
     // Fetch Snap token
     useEffect(() => {
-        if (!snapLoaded || !paymentState?.orderId || tokenFetched.current) return;
+        if (!snapLoaded || orderIds.length === 0 || tokenFetched.current) return;
         tokenFetched.current = true;
 
         const fetchToken = async () => {
             try {
                 const response = await api.post('/payment/create-token', {
-                    order_id: paymentState.orderId,
+                    order_ids: orderIds,
                 });
                 setSnapToken(response.data.snap_token);
                 // Use actual amount from backend
@@ -104,7 +108,7 @@ export default function Payment() {
         };
 
         fetchToken();
-    }, [snapLoaded, paymentState]);
+    }, [snapLoaded, orderIds]);
 
     // Handle payment button click - opens Snap popup
     const handlePayNow = useCallback(() => {
@@ -128,7 +132,7 @@ export default function Payment() {
                     
                     try {
                         await api.post('/payment/update-status', {
-                            order_id: paymentState.orderId,
+                            order_ids: orderIds,
                             status: 'success',
                         });
                     } catch (e) {
@@ -139,7 +143,7 @@ export default function Payment() {
                     
                     setTimeout(() => {
                         navigate('/order-success', { 
-                            state: { orderId: paymentState.orderId },
+                            state: { orderIds: orderIds },
                             replace: true 
                         });
                     }, 2000);
@@ -161,7 +165,7 @@ export default function Payment() {
                     
                     try {
                         await api.post('/payment/update-status', {
-                            order_id: paymentState.orderId,
+                            order_ids: orderIds,
                             status: 'error',
                         });
                     } catch (e) {
@@ -221,7 +225,7 @@ export default function Payment() {
         return null;
     };
 
-    if (!paymentState?.orderId) {
+    if (orderIds.length === 0) {
         return null;
     }
 
@@ -238,7 +242,7 @@ export default function Payment() {
                     </div>
                     <div>
                         <h1 className="text-lg font-bold text-gray-900">Pembayaran</h1>
-                        <p className="text-xs text-gray-500">Order #{paymentState.orderId}</p>
+                        <p className="text-xs text-gray-500">{orderIds.length} Pesanan</p>
                     </div>
                 </div>
             </div>

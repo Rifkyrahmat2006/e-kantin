@@ -74,8 +74,10 @@ export default function MenuDetail() {
                 shop_id: menu.shop_id,
                 shop_name: menu.shop?.name
             });
+            // Reset state after adding - don't navigate to cart
             setTimeout(() => {
-                navigate('/cart');
+                setIsAdding(false);
+                setQuantity(1); // Reset quantity to 1
             }, 300);
         }
     };

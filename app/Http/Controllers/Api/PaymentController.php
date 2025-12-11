@@ -20,7 +20,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * Create Midtrans Snap token for an order
+     * Create Midtrans Snap token for multiple orders (grouped payment)
      */
     public function createSnapToken(Request $request)
     {
@@ -30,48 +30,72 @@ class PaymentController extends Controller
         ]);
 
         $request->validate([
-            'order_id' => 'required|exists:orders,id',
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'exists:orders,id',
         ]);
 
         try {
-            $order = Order::with(['orderItems.menu', 'customer', 'shop'])
+            $orderIds = $request->order_ids;
+            
+            // Get all orders
+            $orders = Order::with(['orderItems.menu', 'customer', 'shop'])
                 ->where('customer_id', $request->user()->id)
-                ->findOrFail($request->order_id);
+                ->whereIn('id', $orderIds)
+                ->get();
 
-            // Check if order already has a paid transaction
-            $existingTransaction = Transaction::where('order_id', $order->id)
-                ->where('payment_status', Transaction::STATUS_PAID)
-                ->first();
-
-            if ($existingTransaction) {
+            if ($orders->count() !== count($orderIds)) {
                 return response()->json([
-                    'message' => 'Order already paid',
+                    'message' => 'Some orders were not found or do not belong to you',
                 ], 400);
             }
 
-            // Create unique order ID for Midtrans
-            $midtransOrderId = 'ORDER-' . $order->id . '-' . time();
+            // Check if any order is already paid
+            foreach ($orders as $order) {
+                $existingTransaction = Transaction::where('order_id', $order->id)
+                    ->where('payment_status', Transaction::STATUS_PAID)
+                    ->first();
 
-            // Prepare item details
-            $itemDetails = [];
-            foreach ($order->orderItems as $item) {
-                $itemDetails[] = [
-                    'id' => (string) $item->menu_id,
-                    'price' => (int) $item->unit_price,
-                    'quantity' => (int) $item->quantity,
-                    'name' => substr($item->menu->name ?? 'Item', 0, 50),
-                ];
+                if ($existingTransaction) {
+                    return response()->json([
+                        'message' => 'Order #' . $order->id . ' is already paid',
+                    ], 400);
+                }
             }
+
+            // Generate payment group ID
+            $paymentGroupId = 'PG-' . time() . '-' . $request->user()->id;
+
+            // Update all orders with the same payment_group_id
+            Order::whereIn('id', $orderIds)->update(['payment_group_id' => $paymentGroupId]);
+
+            // Calculate total and prepare item details
+            $totalAmount = 0;
+            $itemDetails = [];
+
+            foreach ($orders as $order) {
+                foreach ($order->orderItems as $item) {
+                    $itemDetails[] = [
+                        'id' => (string) $item->menu_id,
+                        'price' => (int) $item->unit_price,
+                        'quantity' => (int) $item->quantity,
+                        'name' => substr(($order->shop->name ?? 'Shop') . ' - ' . ($item->menu->name ?? 'Item'), 0, 50),
+                    ];
+                }
+                $totalAmount += (int) $order->total_amount;
+            }
+
+            // Create unique order ID for Midtrans
+            $midtransOrderId = $paymentGroupId;
 
             // Use request user as fallback for customer details
             $user = $request->user();
-            $customer = $order->customer;
+            $customer = $orders->first()->customer;
 
             // Prepare payload
             $payload = [
                 'transaction_details' => [
                     'order_id' => $midtransOrderId,
-                    'gross_amount' => (int) $order->total_amount,
+                    'gross_amount' => $totalAmount,
                 ],
                 'customer_details' => [
                     'first_name' => $customer->name ?? $user->name ?? 'Customer',
@@ -111,25 +135,28 @@ class PaymentController extends Controller
                 throw new \Exception('No token in Midtrans response');
             }
 
-            // Create or update transaction record
-            Transaction::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'customer_id' => $order->customer_id,
-                    'amount_paid' => $order->total_amount,
-                    'payment_method' => 'MIDTRANS',
-                    'payment_status' => Transaction::STATUS_PENDING,
-                    'reference_code' => $midtransOrderId,
-                    'transaction_time' => now(),
-                ]
-            );
+            // Create transaction records for each order
+            foreach ($orders as $order) {
+                Transaction::updateOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'customer_id' => $order->customer_id,
+                        'amount_paid' => $order->total_amount,
+                        'payment_method' => 'MIDTRANS',
+                        'payment_status' => Transaction::STATUS_PENDING,
+                        'reference_code' => $midtransOrderId,
+                        'transaction_time' => now(),
+                    ]
+                );
+            }
 
             return response()->json([
                 'snap_token' => $snapToken,
-                'order_id' => $order->id,
+                'order_ids' => $orderIds,
+                'payment_group_id' => $paymentGroupId,
                 'midtrans_order_id' => $midtransOrderId,
                 'client_key' => config('midtrans.client_key'),
-                'total_amount' => (int) $order->total_amount,
+                'total_amount' => $totalAmount,
             ]);
         } catch (\Exception $e) {
             \Log::error('Midtrans error: ' . $e->getMessage(), [
@@ -152,38 +179,36 @@ class PaymentController extends Controller
             $notification = new \Midtrans\Notification();
 
             $transactionStatus = $notification->transaction_status;
-            $orderId = $notification->order_id;
+            $orderId = $notification->order_id; // This is payment_group_id (PG-xxx)
             $fraudStatus = $notification->fraud_status ?? null;
 
-            // Extract actual order ID from midtrans order ID (ORDER-{id}-{timestamp})
-            preg_match('/ORDER-(\d+)-/', $orderId, $matches);
-            $actualOrderId = $matches[1] ?? null;
-
-            if (!$actualOrderId) {
-                return response()->json(['message' => 'Invalid order ID format'], 400);
-            }
-
-            $transaction = Transaction::where('reference_code', $orderId)->first();
-            $order = Order::find($actualOrderId);
-
-            if (!$transaction || !$order) {
-                return response()->json(['message' => 'Transaction or order not found'], 404);
+            // Find all transactions with this reference_code (payment_group_id)
+            $transactions = Transaction::where('reference_code', $orderId)->get();
+            
+            if ($transactions->isEmpty()) {
+                return response()->json(['message' => 'Transaction not found'], 404);
             }
 
             // Handle different transaction statuses
-            if ($transactionStatus == 'capture') {
-                if ($fraudStatus == 'accept') {
+            foreach ($transactions as $transaction) {
+                $order = Order::find($transaction->order_id);
+                
+                if (!$order) continue;
+
+                if ($transactionStatus == 'capture') {
+                    if ($fraudStatus == 'accept') {
+                        $transaction->update(['payment_status' => Transaction::STATUS_PAID]);
+                        $order->update(['order_status' => Order::STATUS_PROCESSING]);
+                    }
+                } elseif ($transactionStatus == 'settlement') {
                     $transaction->update(['payment_status' => Transaction::STATUS_PAID]);
                     $order->update(['order_status' => Order::STATUS_PROCESSING]);
+                } elseif ($transactionStatus == 'pending') {
+                    $transaction->update(['payment_status' => Transaction::STATUS_PENDING]);
+                } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+                    $transaction->update(['payment_status' => Transaction::STATUS_FAILED]);
+                    $order->update(['order_status' => Order::STATUS_CANCELLED]);
                 }
-            } elseif ($transactionStatus == 'settlement') {
-                $transaction->update(['payment_status' => Transaction::STATUS_PAID]);
-                $order->update(['order_status' => Order::STATUS_PROCESSING]);
-            } elseif ($transactionStatus == 'pending') {
-                $transaction->update(['payment_status' => Transaction::STATUS_PENDING]);
-            } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-                $transaction->update(['payment_status' => Transaction::STATUS_FAILED]);
-                $order->update(['order_status' => Order::STATUS_CANCELLED]);
             }
 
             return response()->json(['message' => 'Notification handled']);
@@ -197,33 +222,40 @@ class PaymentController extends Controller
 
     /**
      * Update payment status manually (for frontend callback)
+     * Supports both single order_id and payment_group_id
      */
     public function updateStatus(Request $request)
     {
         $request->validate([
-            'order_id' => 'required|exists:orders,id',
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'exists:orders,id',
             'status' => 'required|in:success,pending,error',
         ]);
 
-        $order = Order::where('customer_id', $request->user()->id)
-            ->findOrFail($request->order_id);
+        $orders = Order::where('customer_id', $request->user()->id)
+            ->whereIn('id', $request->order_ids)
+            ->get();
 
-        $transaction = Transaction::where('order_id', $order->id)->first();
-
-        if (!$transaction) {
-            return response()->json(['message' => 'Transaction not found'], 404);
+        if ($orders->isEmpty()) {
+            return response()->json(['message' => 'Orders not found'], 404);
         }
 
-        if ($request->status === 'success') {
-            $transaction->update(['payment_status' => Transaction::STATUS_PAID]);
-            $order->update(['order_status' => Order::STATUS_PROCESSING]);
-        } elseif ($request->status === 'error') {
-            $transaction->update(['payment_status' => Transaction::STATUS_FAILED]);
+        foreach ($orders as $order) {
+            $transaction = Transaction::where('order_id', $order->id)->first();
+
+            if (!$transaction) continue;
+
+            if ($request->status === 'success') {
+                $transaction->update(['payment_status' => Transaction::STATUS_PAID]);
+                $order->update(['order_status' => Order::STATUS_PROCESSING]);
+            } elseif ($request->status === 'error') {
+                $transaction->update(['payment_status' => Transaction::STATUS_FAILED]);
+            }
         }
 
         return response()->json([
             'message' => 'Status updated',
-            'order' => $order->fresh(),
+            'order_ids' => $request->order_ids,
         ]);
     }
 }
