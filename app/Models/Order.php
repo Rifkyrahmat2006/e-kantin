@@ -31,6 +31,7 @@ class Order extends Model
     const STATUS_PENDING = 'PENDING';
     const STATUS_PROCESSING = 'PROCESSING';
     const STATUS_COMPLETED = 'COMPLETED';
+    const STATUS_RECEIVED = 'RECEIVED';
     const STATUS_CANCELLED = 'CANCELLED';
 
     // Relationships

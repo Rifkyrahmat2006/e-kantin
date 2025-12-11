@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\CustomerResource\Pages;
-use App\Filament\Resources\CustomerResource\RelationManagers;
-use App\Models\Customer;
+use App\Filament\Resources\UserResource\Pages;
+use App\Filament\Resources\UserResource\RelationManagers;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,12 +12,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Hash;
 
-class CustomerResource extends Resource
+class UserResource extends Resource
 {
-    protected static ?string $model = Customer::class;
+    protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Settings';
 
     public static function canViewAny(): bool
@@ -29,9 +30,9 @@ class CustomerResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Customer Profile')
+                Forms\Components\Section::make('User Details')
                     ->schema([
-                         Forms\Components\FileUpload::make('avatar')
+                        Forms\Components\FileUpload::make('avatar')
                             ->image()
                             ->avatar()
                             ->directory('avatars')
@@ -39,22 +40,22 @@ class CustomerResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\TextInput::make('name')
                             ->required()
-                            ->maxLength(100),
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('email')
                             ->email()
                             ->required()
                             ->maxLength(255),
-                        Forms\Components\TextInput::make('phone')
-                            ->tel()
-                            ->maxLength(15),
-                        Forms\Components\TextInput::make('google_id')
-                            ->label('Google ID')
-                            ->disabled()
-                            ->maxLength(255),
-                         Forms\Components\TextInput::make('table_number')
-                            ->label('Current Table')
-                            ->numeric()
-                            ->maxLength(10),
+                        Forms\Components\Select::make('role')
+                            ->options([
+                                User::ROLE_SUPER_ADMIN => 'Super Admin',
+                                User::ROLE_TENANT_ADMIN => 'Tenant Admin',
+                            ])
+                            ->required(),
+                        Forms\Components\TextInput::make('password')
+                            ->password()
+                            ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                            ->dehydrated(fn ($state) => filled($state))
+                            ->required(fn (string $context): bool => $context === 'create'),
                     ])->columns(2),
             ]);
     }
@@ -69,11 +70,13 @@ class CustomerResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
                     ->searchable(),
-                Tables\Columns\TextColumn::make('phone')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('table_number')
-                    ->label('Table')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('role')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        User::ROLE_SUPER_ADMIN => 'success',
+                        User::ROLE_TENANT_ADMIN => 'warning',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -103,9 +106,9 @@ class CustomerResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCustomers::route('/'),
-            'create' => Pages\CreateCustomer::route('/create'),
-            'edit' => Pages\EditCustomer::route('/{record}/edit'),
+            'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
 }

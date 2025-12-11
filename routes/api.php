@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::post('/orders', [OrderController::class, 'store']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::post('/orders/{id}/confirm-received', [OrderController::class, 'confirmReceived']);
 
     // Cart routes
     Route::get('/cart', [App\Http\Controllers\Api\CartController::class, 'index']);

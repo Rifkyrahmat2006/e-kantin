@@ -25,7 +25,7 @@ class CartController extends Controller
                 'name' => $item->menu->name,
                 'price' => $item->menu->price,
                 'quantity' => $item->quantity,
-                'image' => $item->menu->image,
+                'image' => $item->menu->image_url,
                 'shop_id' => $item->menu->shop_id,
                 'shop_name' => $item->menu->shop->name ?? 'Unknown Shop',
                 'stock' => $item->menu->stock, // Include stock for validation

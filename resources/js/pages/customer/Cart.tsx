@@ -76,7 +76,7 @@ export default function Cart() {
     }
 
     return (
-        <div className="bg-gradient-to-b from-gray-100 to-gray-50 min-h-screen pb-64 md:pb-8">
+        <div className="bg-gradient-to-b from-gray-100 to-gray-50 min-h-screen">
             {/* Header */}
             <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg px-4 py-4 shadow-sm border-b border-gray-100 flex items-center max-w-7xl mx-auto w-full md:rounded-b-2xl md:mt-4 md:px-6">
                 <button onClick={() => navigate(-1)} className="mr-3 p-2 rounded-xl hover:bg-gray-100 transition-colors">
@@ -88,7 +88,7 @@ export default function Cart() {
                 </div>
             </div>
 
-            <div className="mx-auto max-w-2xl px-4 py-6 md:max-w-4xl space-y-4">
+            <div className="mx-auto max-w-2xl px-4 py-6 md:max-w-4xl space-y-4 mb-52 md:mb-40">
 
 
                 {/* Tenant Groups */}
@@ -143,13 +143,13 @@ export default function Cart() {
             </div>
 
             {/* Fixed Bottom Summary */}
-            <div className="fixed bottom-0 left-0 right-0 z-40">
+            <div className="fixed bottom-16 left-0 right-0 z-40 md:bottom-0">
                 <div className="max-w-md mx-auto md:max-w-4xl">
                     {/* Gradient overlay on top */}
                     <div className="h-6 bg-gradient-to-t from-white to-transparent md:hidden"></div>
                     
                     <div className="bg-white border-t border-gray-200 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.15)] rounded-t-3xl md:rounded-2xl md:shadow-lg md:border md:mb-4 md:mx-4">
-                        <div className="p-4 pb-safe md:pb-4">
+                        <div className="p-4">
                             {/* Summary Row */}
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
@@ -201,9 +201,6 @@ export default function Cart() {
                         </div>
                     </div>
                 </div>
-                
-                {/* Mobile bottom nav spacer */}
-                <div className="h-[4.5rem] bg-white md:hidden"></div>
             </div>
         </div>
     );

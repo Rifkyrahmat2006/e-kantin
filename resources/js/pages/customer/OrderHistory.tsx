@@ -55,7 +55,7 @@ export default function OrderHistory() {
         if (activeTab === 'all') return true;
         if (activeTab === 'pending') return order.order_status === 'PENDING';
         if (activeTab === 'processing') return order.order_status === 'PROCESSING';
-        if (activeTab === 'completed') return order.order_status === 'COMPLETED' || order.order_status === 'CANCELLED';
+        if (activeTab === 'completed') return order.order_status === 'COMPLETED' || order.order_status === 'RECEIVED' || order.order_status === 'CANCELLED';
         return true;
     });
 
@@ -63,9 +63,15 @@ export default function OrderHistory() {
         switch (status) {
             case 'COMPLETED':
                 return {
+                    color: 'bg-yellow-100 text-yellow-700',
+                    icon: <CheckCircle2 className="h-4 w-4 mr-1.5" />,
+                    label: 'Siap Diambil'
+                };
+            case 'RECEIVED':
+                return {
                     color: 'bg-green-100 text-green-700',
                     icon: <CheckCircle2 className="h-4 w-4 mr-1.5" />,
-                    label: 'Selesai'
+                    label: 'Diterima'
                 };
             case 'PENDING':
                 return {
@@ -102,6 +108,18 @@ export default function OrderHistory() {
                 totalAmount: order.total_amount
             }
         });
+    };
+
+    const handleConfirmReceived = async (e: React.MouseEvent, order: Order) => {
+        e.preventDefault();
+        try {
+            await api.post(`/orders/${order.id}/confirm-received`);
+            // Refresh orders
+            const response = await api.get('/orders');
+            setOrders(response.data.orders);
+        } catch (error) {
+            console.error('Error confirming order:', error);
+        }
     };
 
     if (isLoading) {
@@ -245,6 +263,16 @@ export default function OrderHistory() {
                                             >
                                                 <Truck className="h-4 w-4" />
                                                 Lacak
+                                            </button>
+                                        )}
+
+                                        {order.order_status === 'COMPLETED' && (
+                                            <button
+                                                onClick={(e) => handleConfirmReceived(e, order)}
+                                                className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-200 flex items-center gap-2"
+                                            >
+                                                <CheckCircle2 className="h-4 w-4" />
+                                                Terima Pesanan
                                             </button>
                                         )}
                                     </div>

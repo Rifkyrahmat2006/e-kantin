@@ -118,11 +118,42 @@ class OrderController extends Controller
     public function show(Request $request, $id)
     {
         $order = Order::where('customer_id', $request->user()->id)
-            ->with(['orderItems.menu', 'customer', 'shop'])
+            ->with(['orderItems.menu', 'customer', 'shop', 'transaction'])
             ->findOrFail($id);
 
         return response()->json([
             'order' => $order,
         ]);
+    }
+
+    /**
+     * Customer confirms order received
+     */
+    public function confirmReceived(Request $request, $id)
+    {
+        try {
+            $order = Order::where('customer_id', $request->user()->id)
+                ->findOrFail($id);
+
+            // Only allow confirmation if order is COMPLETED
+            if ($order->order_status !== Order::STATUS_COMPLETED) {
+                return response()->json([
+                    'message' => 'Order cannot be confirmed. Status: ' . $order->order_status,
+                ], 422);
+            }
+
+            $order->order_status = Order::STATUS_RECEIVED;
+            $order->save();
+
+            return response()->json([
+                'message' => 'Pesanan berhasil dikonfirmasi diterima',
+                'order' => $order,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error: ' . $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
+        }
     }
 }

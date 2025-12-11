@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\HasAvatar;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class Customer extends Authenticatable
+class Customer extends Authenticatable implements HasAvatar
 {
     use HasFactory, HasApiTokens, Notifiable;
 
@@ -40,7 +41,9 @@ class Customer extends Authenticatable
     // Automatically hash password when setting
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password'] = bcrypt($value);
+        if ($value) {
+            $this->attributes['password'] = bcrypt($value);
+        }
     }
 
     // Relationships
@@ -52,5 +55,18 @@ class Customer extends Authenticatable
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        if (str_starts_with($this->avatar, 'http://') || str_starts_with($this->avatar, 'https://')) {
+            return $this->avatar;
+        }
+
+        return url('storage/' . $this->avatar);
     }
 }
