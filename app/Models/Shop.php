@@ -34,12 +34,18 @@ class Shop extends Model
     const STATUS_CLOSED = 'closed';
 
     // Appends
-    protected $appends = ['image_url', 'is_open_now'];
+    protected $appends = ['image_url', 'is_open_now', 'average_rating'];
 
     // Accessors
     public function getImageUrlAttribute()
     {
         return $this->image ? url('storage/' . $this->image) : null;
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        $menuIds = $this->menus()->pluck('id');
+        return round(MenuReview::whereIn('menu_id', $menuIds)->avg('rating') ?? 0, 1);
     }
 
     /**

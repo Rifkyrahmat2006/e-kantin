@@ -35,12 +35,36 @@ class Menu extends Model
     const STATUS_UNAVAILABLE = 'unavailable';
 
     // Appends
-    protected $appends = ['image_url'];
+    protected $appends = ['image_url', 'average_rating', 'reviews_count', 'likes_count', 'total_sold'];
 
     // Accessors
     public function getImageUrlAttribute()
     {
         return $this->image ? url('storage/' . $this->image) : null;
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return round($this->reviews()->avg('rating') ?? 0, 1);
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
+
+    public function getLikesCountAttribute()
+    {
+        return $this->likes()->count();
+    }
+
+    public function getTotalSoldAttribute()
+    {
+        // Use a more efficient query with join instead of whereHas
+        return \App\Models\OrderItem::where('menu_id', $this->id)
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->whereIn('orders.order_status', ['PROCESSING', 'COMPLETED', 'RECEIVED'])
+            ->sum('order_items.quantity');
     }
 
     // Relationships
@@ -57,6 +81,16 @@ class Menu extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(MenuReview::class);
+    }
+
+    public function likes()
+    {
+        return $this->hasMany(MenuLike::class);
     }
 
     protected static function booted()

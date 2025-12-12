@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\LikeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +26,9 @@ Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/categories', [MenuController::class, 'categories']);
 Route::get('/categories/{id}/menus', [MenuController::class, 'menusByCategory']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
+
+// Public review routes (anyone can view)
+Route::get('/menus/{id}/reviews', [ReviewController::class, 'index']);
 
 // Public shop routes
 Route::get('/shops', [ShopController::class, 'index']);
@@ -56,5 +61,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Payment routes
     Route::post('/payment/create-token', [PaymentController::class, 'createSnapToken']);
     Route::post('/payment/update-status', [PaymentController::class, 'updateStatus']);
+
+    // Review routes (customer only)
+    Route::post('/menus/{id}/reviews', [ReviewController::class, 'store']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Like routes (customer only)
+    Route::post('/menus/{id}/like', [LikeController::class, 'toggle']);
+    Route::get('/menus/{id}/like-status', [LikeController::class, 'status']);
 });
+
 
