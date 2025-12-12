@@ -43,14 +43,21 @@ class OrderController extends Controller
                 throw new \Exception("Shop ID is required");
             }
 
+            // Determine initial order status based on payment method
+            $paymentMethod = $request->payment_method ?? Order::PAYMENT_MIDTRANS;
+            $initialStatus = $paymentMethod === Order::PAYMENT_CASH 
+                ? Order::STATUS_PROCESSING  // Cash orders go directly to processing
+                : Order::STATUS_PENDING;    // Midtrans orders wait for payment confirmation
+
             // Create order
             $order = Order::create([
                 'shop_id' => $request->shop_id,
                 'customer_id' => $request->user()->id,
                 'order_time' => now(),
                 'total_amount' => 0, // Will calculate below
-                'order_status' => Order::STATUS_PENDING,
+                'order_status' => $initialStatus,
                 'notes' => $request->notes,
+                'payment_method' => $paymentMethod,
             ]);
 
             $totalAmount = 0;

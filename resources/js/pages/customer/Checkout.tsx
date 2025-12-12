@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import api from '../../lib/api';
 import { formatRupiah } from '../../utils/formatRupiah';
-import { ChevronLeft, MapPin, FileText, Receipt, ShoppingBag, ChevronDown, Truck } from 'lucide-react';
+import { ChevronLeft, MapPin, FileText, Receipt, ShoppingBag, ChevronDown, Truck, CreditCard, Banknote, CheckCircle } from 'lucide-react';
 
 // Delivery locations
 const DELIVERY_LOCATIONS = [
@@ -21,14 +21,19 @@ const DELIVERY_LOCATIONS = [
     { id: 'gazebo-5', name: 'Gazebo 5' },
 ];
 
+// Payment methods
+type PaymentMethod = 'MIDTRANS' | 'CASH';
+
 export default function Checkout() {
-    const { items, totalPrice, getSelectedItems, selectedTotalPrice, selectedItemsCount } = useCart();
+    const { items, totalPrice, getSelectedItems, selectedTotalPrice, selectedItemsCount, clearCart } = useCart();
     const navigate = useNavigate();
     const [deliveryLocation, setDeliveryLocation] = useState('');
     const [deliveryDescription, setDeliveryDescription] = useState('');
     const [notes, setNotes] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('MIDTRANS');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Use selected items for checkout
     const checkoutItems = getSelectedItems();
@@ -69,7 +74,8 @@ export default function Checkout() {
             const fullNotes = [
                 `Lokasi: ${locationName}`,
                 deliveryDescription ? `Detail: ${deliveryDescription}` : '',
-                notes ? `Catatan: ${notes}` : ''
+                notes ? `Catatan: ${notes}` : '',
+                `Pembayaran: ${paymentMethod === 'CASH' ? 'Tunai' : 'Midtrans'}`
             ].filter(Boolean).join(' | ');
 
             // Group items by shop
@@ -88,7 +94,8 @@ export default function Checkout() {
                         quantity: item.quantity
                     })),
                     table_number: locationName,
-                    notes: fullNotes
+                    notes: fullNotes,
+                    payment_method: paymentMethod
                 });
 
                 orderIds.push(orderResponse.data.order.id);
@@ -97,14 +104,25 @@ export default function Checkout() {
 
             console.log('Orders created:', orderIds);
 
-            // Navigate to payment page with first order (or handle multiple orders)
-            navigate('/payment', {
-                state: {
-                    orderId: orderIds[0], // Use first order for now
-                    orderIds: orderIds, // All order IDs
-                    totalAmount: totalAmount
-                }
-            });
+            if (paymentMethod === 'CASH') {
+                // For cash payment, show success and navigate to order history
+                setShowSuccess(true);
+                // Clear cart for selected items
+                setTimeout(() => {
+                    navigate('/orders', {
+                        state: { message: 'Pesanan berhasil dibuat! Silakan bayar secara tunai saat menerima pesanan.' }
+                    });
+                }, 2000);
+            } else {
+                // For Midtrans, navigate to payment page
+                navigate('/payment', {
+                    state: {
+                        orderId: orderIds[0],
+                        orderIds: orderIds,
+                        totalAmount: totalAmount
+                    }
+                });
+            }
         } catch (err: any) {
             console.error('Checkout error:', err);
             console.error('Error response:', JSON.stringify(err.response?.data, null, 2));
@@ -124,10 +142,31 @@ export default function Checkout() {
 
     // Redirect if no items selected
     useEffect(() => {
-        if (checkoutItems.length === 0) {
+        if (checkoutItems.length === 0 && !showSuccess) {
             navigate('/cart');
         }
-    }, [checkoutItems.length, navigate]);
+    }, [checkoutItems.length, navigate, showSuccess]);
+
+    // Success modal for cash payment
+    if (showSuccess) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl p-8 mx-4 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30 mb-6">
+                        <CheckCircle className="h-10 w-10 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Pesanan Berhasil!</h2>
+                    <p className="text-gray-600 mb-6">
+                        Pesanan Anda telah diterima. Silakan siapkan pembayaran tunai saat pesanan diantar.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                        <div className="h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                        Mengarahkan ke Riwayat Pesanan...
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     if (checkoutItems.length === 0) {
         return null;
@@ -236,6 +275,82 @@ export default function Checkout() {
                                 placeholder="Contoh: Jangan terlalu pedas, es dipisah, tanpa bawang..."
                                 className="block w-full rounded-xl border-gray-200 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm placeholder:text-gray-400 hover:bg-gray-100 transition-colors px-4 py-3"
                             />
+                        </div>
+                    </div>
+
+                    {/* Payment Method Section */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-green-50 to-white">
+                            <div className="flex items-center">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-sm mr-3">
+                                    <CreditCard className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-gray-900">Metode Pembayaran</h2>
+                                    <p className="text-xs text-gray-500">Pilih cara pembayaran</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {/* Midtrans Option */}
+                            <label 
+                                className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                    paymentMethod === 'MIDTRANS' 
+                                        ? 'border-blue-500 bg-blue-50' 
+                                        : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    value="MIDTRANS"
+                                    checked={paymentMethod === 'MIDTRANS'}
+                                    onChange={() => setPaymentMethod('MIDTRANS')}
+                                    className="sr-only"
+                                />
+                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center mr-3 ${
+                                    paymentMethod === 'MIDTRANS' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
+                                }`}>
+                                    <CreditCard className="h-5 w-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-gray-900">Pembayaran Online</p>
+                                    <p className="text-xs text-gray-500">QRIS, E-Wallet, Transfer Bank</p>
+                                </div>
+                                {paymentMethod === 'MIDTRANS' && (
+                                    <CheckCircle className="h-6 w-6 text-blue-500" />
+                                )}
+                            </label>
+
+                            {/* Cash Option */}
+                            <label 
+                                className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                    paymentMethod === 'CASH' 
+                                        ? 'border-green-500 bg-green-50' 
+                                        : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+                                }`}
+                            >
+                                <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    value="CASH"
+                                    checked={paymentMethod === 'CASH'}
+                                    onChange={() => setPaymentMethod('CASH')}
+                                    className="sr-only"
+                                />
+                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center mr-3 ${
+                                    paymentMethod === 'CASH' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'
+                                }`}>
+                                    <Banknote className="h-5 w-5" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-gray-900">Bayar Tunai</p>
+                                    <p className="text-xs text-gray-500">Bayar saat pesanan diantar</p>
+                                </div>
+                                {paymentMethod === 'CASH' && (
+                                    <CheckCircle className="h-6 w-6 text-green-500" />
+                                )}
+                            </label>
                         </div>
                     </div>
                 </div>

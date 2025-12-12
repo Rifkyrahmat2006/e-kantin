@@ -209,10 +209,10 @@ export default function OrderHistory() {
                                     {order.order_items.map((item) => (
                                         <div key={item.id} className="flex gap-4">
                                             <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 border border-gray-100">
-                                                {item.menu.image_url ? (
+                                                {item.menu?.image_url ? (
                                                     <img
                                                         src={item.menu.image_url}
-                                                        alt={item.menu.name}
+                                                        alt={item.menu?.name || 'Menu'}
                                                         className="h-full w-full object-cover"
                                                     />
                                                 ) : (
@@ -222,7 +222,7 @@ export default function OrderHistory() {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <h4 className="font-semibold text-gray-900 line-clamp-1">{item.menu.name}</h4>
+                                                <h4 className="font-semibold text-gray-900 line-clamp-1">{item.menu?.name || 'Menu Tidak Tersedia'}</h4>
                                                 <div className="flex items-center justify-between mt-1">
                                                     <p className="text-sm text-gray-500 font-medium">
                                                         {item.quantity} x {formatRupiah(Number(item.unit_price))}

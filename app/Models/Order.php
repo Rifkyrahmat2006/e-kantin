@@ -19,7 +19,12 @@ class Order extends Model
         'order_status',
         'notes',
         'payment_group_id',
+        'payment_method',
     ];
+
+    // Payment method constants
+    const PAYMENT_MIDTRANS = 'MIDTRANS';
+    const PAYMENT_CASH = 'CASH';
 
     protected $casts = [
         'order_time' => 'datetime',

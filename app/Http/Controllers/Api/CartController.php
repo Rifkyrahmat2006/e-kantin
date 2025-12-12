@@ -18,8 +18,17 @@ class CartController extends Controller
             ->with(['menu', 'menu.shop'])
             ->get();
 
+        // Filter out items where menu has been deleted
+        $validItems = $items->filter(fn($item) => $item->menu !== null);
+        
+        // Clean up orphaned cart items (where menu was deleted)
+        $orphanedIds = $items->filter(fn($item) => $item->menu === null)->pluck('id');
+        if ($orphanedIds->isNotEmpty()) {
+            CartItem::whereIn('id', $orphanedIds)->delete();
+        }
+
         // Transform to match frontend CartItem interface
-        $formattedItems = $items->map(function ($item) {
+        $formattedItems = $validItems->map(function ($item) {
             return [
                 'id' => $item->menu->id,
                 'name' => $item->menu->name,
@@ -30,7 +39,7 @@ class CartController extends Controller
                 'shop_name' => $item->menu->shop->name ?? 'Unknown Shop',
                 'stock' => $item->menu->stock, // Include stock for validation
             ];
-        });
+        })->values();
 
         return response()->json([
             'items' => $formattedItems,

@@ -40,20 +40,63 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
-    const { isAuthenticated } = useAuth();
+    const [isCartLoaded, setIsCartLoaded] = useState(false);
+    const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const { showToast } = useToast();
 
-    // Load cart from local storage or API
+    // Load cart from local storage or API - wait for auth to finish loading
     useEffect(() => {
+        if (isAuthLoading) return; // Wait for auth to finish loading
+        
         const loadCart = async () => {
             if (isAuthenticated) {
                 try {
                     const response = await api.get('/cart');
-                    setItems(response.data.items);
-                    // Auto-select all items when loading
-                    setSelectedItems(new Set(response.data.items.map((item: CartItem) => item.id)));
+                    const serverItems = response.data.items || [];
+                    
+                    // If server cart is empty but we have local items, sync them up
+                    const localCart = localStorage.getItem('cart_items');
+                    if (serverItems.length === 0 && localCart) {
+                        try {
+                            const localItems = JSON.parse(localCart);
+                            if (localItems.length > 0) {
+                                // Sync local items to server
+                                for (const item of localItems) {
+                                    await api.post('/cart', {
+                                        menu_id: item.id,
+                                        quantity: item.quantity,
+                                        set_quantity: true
+                                    });
+                                }
+                                // Refetch from server
+                                const refreshResponse = await api.get('/cart');
+                                setItems(refreshResponse.data.items || []);
+                                setSelectedItems(new Set((refreshResponse.data.items || []).map((item: CartItem) => item.id)));
+                                localStorage.removeItem('cart_items'); // Clear local after sync
+                                setIsCartLoaded(true);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('Failed to sync local cart:', e);
+                        }
+                    }
+                    
+                    setItems(serverItems);
+                    setSelectedItems(new Set(serverItems.map((item: CartItem) => item.id)));
+                    localStorage.removeItem('cart_items'); // Clear local storage when logged in
                 } catch (error) {
                     console.error('Failed to fetch cart from server:', error);
+                    // Fallback to local storage if server fails
+                    const storedCart = localStorage.getItem('cart_items');
+                    if (storedCart) {
+                        try {
+                            const parsedItems = JSON.parse(storedCart);
+                            setItems(parsedItems);
+                            setSelectedItems(new Set(parsedItems.map((item: CartItem) => item.id)));
+                        } catch (e) {
+                            console.error('Failed to parse cart items', e);
+                        }
+                    }
                 }
             } else {
                 const storedCart = localStorage.getItem('cart_items');
@@ -61,7 +104,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     try {
                         const parsedItems = JSON.parse(storedCart);
                         setItems(parsedItems);
-                        // Auto-select all items
                         setSelectedItems(new Set(parsedItems.map((item: CartItem) => item.id)));
                     } catch (e) {
                         console.error('Failed to parse cart items', e);
@@ -71,10 +113,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
                     setSelectedItems(new Set());
                 }
             }
+            setIsCartLoaded(true);
         };
 
         loadCart();
-    }, [isAuthenticated]);
+    }, [isAuthenticated, isAuthLoading]);
 
     // Save cart to local storage whenever it changes (only if not authenticated)
     useEffect(() => {

@@ -81,7 +81,7 @@ class MenuController extends Controller
      */
     public function show($id)
     {
-        $menu = Menu::with('category')->findOrFail($id);
+        $menu = Menu::with(['category', 'shop'])->findOrFail($id);
 
         return response()->json([
             'menu' => $menu,
