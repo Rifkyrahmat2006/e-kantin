@@ -35,7 +35,7 @@ class ShopResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Select::make('owner_user_id')
                             ->label('Pemilik')
-                            ->relationship('owner', 'name', fn ($query) => $query->where('role', 'TenantAdmin'))
+                            ->options(fn () => \App\Models\User::where('role', 'tenant_admin')->pluck('name', 'id'))
                             ->required()
                             ->searchable()
                             ->preload(),
