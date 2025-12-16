@@ -83,7 +83,7 @@ class ReviewController extends Controller
         $user = $request->user();
 
         // Only the customer who wrote the review can delete it
-        if (!($user instanceof \App\Models\Customer) || $review->customer_id !== $user->id) {
+        if (!($user instanceof \App\Models\Customer) || $review->customer_id != $user->id) {
             return response()->json([
                 'message' => 'Anda tidak berhak menghapus review ini.',
             ], 403);
