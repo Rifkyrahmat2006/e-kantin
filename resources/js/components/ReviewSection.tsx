@@ -2,6 +2,15 @@ import { Star, Trash2, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../lib/api';
+import { Button } from './ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from './ui/dialog';
 
 interface Review {
     id: number;
@@ -30,6 +39,7 @@ export default function ReviewSection({ menuId }: ReviewSectionProps) {
     const [comment, setComment] = useState('');
     const [hoverRating, setHoverRating] = useState(0);
     const [hasReviewed, setHasReviewed] = useState(false);
+    const [reviewToDelete, setReviewToDelete] = useState<number | null>(null);
 
     useEffect(() => {
         fetchReviews();
@@ -76,12 +86,17 @@ export default function ReviewSection({ menuId }: ReviewSectionProps) {
         }
     };
 
-    const handleDelete = async (reviewId: number) => {
-        if (!confirm('Hapus review ini?')) return;
+    const handleDelete = (reviewId: number) => {
+        setReviewToDelete(reviewId);
+    };
+
+    const confirmDelete = async () => {
+        if (!reviewToDelete) return;
 
         try {
-            await api.delete(`/reviews/${reviewId}`);
+            await api.delete(`/reviews/${reviewToDelete}`);
             fetchReviews();
+            setReviewToDelete(null);
         } catch (err: any) {
             alert(err.response?.data?.message || 'Gagal menghapus review');
         }
@@ -276,6 +291,32 @@ export default function ReviewSection({ menuId }: ReviewSectionProps) {
                     ))
                 )}
             </div>
+
+            <Dialog
+                open={!!reviewToDelete}
+                onOpenChange={(open) => !open && setReviewToDelete(null)}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Hapus Ulasan?</DialogTitle>
+                        <DialogDescription>
+                            Apakah Anda yakin ingin menghapus ulasan ini?
+                            Tindakan ini tidak dapat dibatalkan.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setReviewToDelete(null)}
+                        >
+                            Batal
+                        </Button>
+                        <Button variant="destructive" onClick={confirmDelete}>
+                            Hapus
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
