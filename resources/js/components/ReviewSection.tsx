@@ -242,7 +242,7 @@ export default function ReviewSection({ menuId }: ReviewSectionProps) {
                                         <h4 className="truncate font-semibold text-gray-900">
                                             {review.customer.name}
                                         </h4>
-                                        {customer?.id ===
+                                        {customer?.id ==
                                             review.customer.id && (
                                             <button
                                                 onClick={() =>
