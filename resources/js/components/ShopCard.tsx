@@ -7,6 +7,7 @@ export interface Shop {
     description: string;
     image_url: string | null;
     status: string;
+    is_open_now: boolean;
 }
 
 interface ShopCardProps {
@@ -16,6 +17,7 @@ interface ShopCardProps {
 
 export default function ShopCard({ shop, variant = 'vertical' }: ShopCardProps) {
     const isHorizontal = variant === 'horizontal';
+    const isOpen = shop.status === 'open' && shop.is_open_now;
 
     return (
         <Link
@@ -31,12 +33,12 @@ export default function ShopCard({ shop, variant = 'vertical' }: ShopCardProps) 
                 />
                 <div className="absolute top-2 right-2">
                     <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm ${shop.status === 'open'
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium shadow-sm ${isOpen
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-rose-100 text-rose-800'
                             }`}
                     >
-                        {shop.status === 'open' ? 'Open' : 'Closed'}
+                        {isOpen ? 'Open' : 'Closed'}
                     </span>
                 </div>
             </div>

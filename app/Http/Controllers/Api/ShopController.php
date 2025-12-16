@@ -13,7 +13,7 @@ class ShopController extends Controller
      */
     public function index()
     {
-        $shops = Shop::where('status', 'open')->get();
+        $shops = Shop::all();
 
         return response()->json([
             'shops' => $shops,
@@ -25,7 +25,7 @@ class ShopController extends Controller
      */
     public function show($id)
     {
-        $shop = Shop::where('status', 'open')->findOrFail($id);
+        $shop = Shop::findOrFail($id);
 
         return response()->json([
             'shop' => $shop,
