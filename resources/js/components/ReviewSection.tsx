@@ -20,7 +20,7 @@ interface ReviewSectionProps {
 }
 
 export default function ReviewSection({ menuId }: ReviewSectionProps) {
-    const { customer, isAuthenticated } = useAuth();
+    const { user: customer, isAuthenticated } = useAuth();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [averageRating, setAverageRating] = useState(0);
     const [reviewsCount, setReviewsCount] = useState(0);
