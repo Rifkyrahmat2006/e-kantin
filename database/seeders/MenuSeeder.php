@@ -12,9 +12,15 @@ class MenuSeeder extends Seeder
      */
     public function run(): void
     {
-        $shop1 = \App\Models\Shop::where('name', 'Warung Masse')->first()->id;
-        $shop2 = \App\Models\Shop::where('name', 'Pojok Jus')->first()->id;
-        $shop3 = \App\Models\Shop::where('name', 'Snack Corner')->first()->id;
+        $shop1 = \App\Models\Shop::where('name', 'Warung Masse')->first()?->id;
+        $shop2 = \App\Models\Shop::where('name', 'Warung Bude')->first()?->id;
+        $shop3 = \App\Models\Shop::where('name', 'Warung Bu Sri')->first()?->id;
+
+        // Skip seeding if shops don't exist
+        if (!$shop1 || !$shop2 || !$shop3) {
+            $this->command->warn('Shops not found. Please run ShopSeeder first.');
+            return;
+        }
 
         DB::table('menus')->insert([
             // Makanan Pembuka (Category 1) - Shop 1
