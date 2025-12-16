@@ -11354,3 +11354,9 @@
 "} 
 [2025-12-12 13:48:53] local.INFO: Midtrans Config: {"server_key":"SET (length: 38)","is_production":false} 
 [2025-12-12 13:48:53] local.INFO: Creating Snap token with payload: {"transaction_details":{"order_id":"PG-1765522133-13","gross_amount":13000},"customer_details":{"first_name":"RIFKY DWI RAHMAT PRAKOSO","email":"rifky.prakoso@mhs.unsoed.ac.id","phone":""},"item_details":[{"id":"15","price":13000,"quantity":1,"name":"Warung Masse - Nasi Ayam Geprek"}]} 
+[2025-12-12 14:56:11] local.INFO: Midtrans Config: {"server_key":"SET (length: 38)","is_production":false} 
+[2025-12-12 14:56:11] local.INFO: Creating Snap token with payload: {"transaction_details":{"order_id":"PG-1765526171-13","gross_amount":26000},"customer_details":{"first_name":"RIFKY DWI RAHMAT PRAKOSO","email":"rifky.prakoso@mhs.unsoed.ac.id","phone":""},"item_details":[{"id":"15","price":13000,"quantity":2,"name":"Warung Masse - Nasi Ayam Geprek"}]} 
+[2025-12-12 14:59:55] local.INFO: Midtrans Config: {"server_key":"SET (length: 38)","is_production":false} 
+[2025-12-12 14:59:55] local.INFO: Creating Snap token with payload: {"transaction_details":{"order_id":"PG-1765526395-13","gross_amount":26000},"customer_details":{"first_name":"RIFKY DWI RAHMAT PRAKOSO","email":"rifky.prakoso@mhs.unsoed.ac.id","phone":""},"item_details":[{"id":"15","price":13000,"quantity":2,"name":"Warung Masse - Nasi Ayam Geprek"}]} 
+[2025-12-12 15:14:54] local.INFO: Midtrans Config: {"server_key":"SET (length: 38)","is_production":false} 
+[2025-12-12 15:14:54] local.INFO: Creating Snap token with payload: {"transaction_details":{"order_id":"PG-1765527294-13","gross_amount":62000},"customer_details":{"first_name":"RIFKY DWI RAHMAT PRAKOSO","email":"rifky.prakoso@mhs.unsoed.ac.id","phone":""},"item_details":[{"id":"5","price":18000,"quantity":2,"name":"Warung Masse - Ayam Geprek"},{"id":"6","price":13000,"quantity":2,"name":"Warung Masse - Soto Ayam"}]} 
