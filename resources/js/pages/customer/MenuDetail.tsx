@@ -9,7 +9,7 @@ import {
     Store,
     X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import LikeButton from '../../components/LikeButton';
 import ReviewSection from '../../components/ReviewSection';
@@ -51,82 +51,11 @@ export default function MenuDetail() {
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
     const [showImagePopup, setShowImagePopup] = useState(false);
-    
-    // Drag handle state
-    const [dragOffset, setDragOffset] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
-    const dragStartY = useRef(0);
-    const contentCardRef = useRef<HTMLDivElement>(null);
-
-    // Handle drag start
-    const handleDragStart = useCallback((clientY: number) => {
-        setIsDragging(true);
-        dragStartY.current = clientY;
-    }, []);
-
-    // Handle drag move
-    const handleDragMove = useCallback((clientY: number) => {
-        if (!isDragging) return;
-        const delta = clientY - dragStartY.current;
-        // Only allow dragging down (positive delta)
-        if (delta > 0) {
-            setDragOffset(Math.min(delta, 150));
-        }
-    }, [isDragging]);
-
-    // Handle drag end
-    const handleDragEnd = useCallback(() => {
-        if (dragOffset > 80) {
-            // Threshold reached, show popup
-            setShowImagePopup(true);
-        }
-        setDragOffset(0);
-        setIsDragging(false);
-    }, [dragOffset]);
-
-    // Touch event handlers
-    const onTouchStart = (e: React.TouchEvent) => {
-        handleDragStart(e.touches[0].clientY);
-    };
-    
-    const onTouchMove = (e: React.TouchEvent) => {
-        handleDragMove(e.touches[0].clientY);
-    };
-    
-    const onTouchEnd = () => {
-        handleDragEnd();
-    };
-
-    // Mouse event handlers (for desktop testing)
-    const onMouseDown = (e: React.MouseEvent) => {
-        handleDragStart(e.clientY);
-    };
 
     // Scroll to top when page loads
     useEffect(() => {
         window.scrollTo(0, 0);
     }, []);
-    
-    // Add global mouse event listeners for drag
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            handleDragMove(e.clientY);
-        };
-        
-        const handleMouseUp = () => {
-            handleDragEnd();
-        };
-        
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging, handleDragMove, handleDragEnd]);
 
     useEffect(() => {
         const fetchMenu = async () => {
@@ -228,6 +157,7 @@ export default function MenuDetail() {
                         alt={menu.name}
                         className="max-h-[90vh] max-w-full rounded-lg object-contain"
                         onClick={(e) => e.stopPropagation()}
+                        onContextMenu={(e) => e.preventDefault()}
                     />
                 </div>
             )}
@@ -244,6 +174,7 @@ export default function MenuDetail() {
                         alt={menu.name}
                         className="h-full w-full cursor-pointer object-cover"
                         onClick={() => setShowImagePopup(true)}
+                        onContextMenu={(e) => e.preventDefault()}
                     />
 
                     {/* Back Button Only */}
@@ -258,33 +189,10 @@ export default function MenuDetail() {
                 </div>
 
                 {/* Content Card */}
-                <div 
-                    ref={contentCardRef}
-                    className="relative -mt-6 min-h-[50vh] overflow-hidden rounded-t-3xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.1)]"
-                    style={{
-                        transform: `translateY(${dragOffset}px)`,
-                        transition: isDragging ? 'none' : 'transform 0.3s ease-out',
-                    }}
-                >
-                    {/* Draggable Handle */}
-                    <div 
-                        className="flex flex-col items-center justify-center py-3 active:cursor-grabbing"
-                        onTouchStart={onTouchStart}
-                        onTouchMove={onTouchMove}
-                        onTouchEnd={onTouchEnd}
-                        onMouseDown={onMouseDown}
-                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-                    >
-                        <div className={`h-1.5 w-12 rounded-full transition-all ${isDragging ? 'w-16 bg-blue-400' : 'bg-gray-300'}`} />
-                        {/* Pull indicator - inside handle div */}
-                        {dragOffset > 20 && (
-                            <p 
-                                className="mt-2 text-center text-xs text-gray-400"
-                                style={{ opacity: Math.min(dragOffset / 80, 1) }}
-                            >
-                                {dragOffset > 80 ? '↓ Lepaskan' : '↓ Tarik'}
-                            </p>
-                        )}
+                <div className="relative -mt-6 min-h-[50vh] overflow-hidden rounded-t-3xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.1)]">
+                    {/* Handle */}
+                    <div className="flex items-center justify-center py-3">
+                        <div className="h-1.5 w-12 rounded-full bg-gray-300" />
                     </div>
 
                     <div className="p-6">
@@ -464,6 +372,7 @@ export default function MenuDetail() {
                                 alt={menu.name}
                                 className="h-full w-full cursor-pointer object-cover transition-transform hover:scale-105"
                                 onClick={() => setShowImagePopup(true)}
+                                onContextMenu={(e) => e.preventDefault()}
                             />
                             {menu.category && (
                                 <div className="absolute top-4 left-4">
