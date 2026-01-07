@@ -44,23 +44,23 @@ export default function MenuCard({ menu }: MenuCardProps) {
                 <span className="mb-1 block truncate text-xs font-medium text-gray-500">
                     {menu.shop?.name || 'Unknown Shop'}
                 </span>
-                <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-bold text-gray-900">
+                <h3 className="line-clamp-2 min-h-[1.5rem] text-sm font-bold text-gray-900">
                     {menu.name}
                 </h3>
                 {/* Star Rating */}
-                <div className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                <div className="mt-1 inline-flex w-fit items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5">
                     <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    <span className="font-semibold text-gray-700">
+                    <span className="text-xs font-semibold text-amber-600">
                         {menu.average_rating || '0'}
                     </span>
                 </div>
                 {/* Price and Sold Count */}
-                <div className="mt-2 flex items-center justify-between">
-                    <p className="text-base font-bold text-blue-600">
+                <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="whitespace-nowrap text-base font-bold text-blue-600">
                         {formatRupiah(menu.price)}
                     </p>
                     {menu.total_sold !== undefined && menu.total_sold > 0 && (
-                        <span className="text-xs text-gray-400">
+                        <span className="whitespace-nowrap text-xs text-gray-400">
                             {menu.total_sold}+ terjual
                         </span>
                     )}
