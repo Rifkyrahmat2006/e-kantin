@@ -50,7 +50,7 @@ export default function Payment() {
         }
 
         // Set initial amount from navigation state
-        setActualAmount(paymentState.totalAmount || 0);
+        setActualAmount(paymentState?.totalAmount || 0);
 
         if (window.snap) {
             setSnapLoaded(true);
@@ -70,7 +70,13 @@ export default function Payment() {
         }
 
         const script = document.createElement('script');
-        script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+        // Determine environment based on Client Key prefix (SB- means Sandbox)
+        const isProduction = !MIDTRANS_CLIENT_KEY.startsWith('SB-');
+        const snapUrl = isProduction 
+            ? 'https://app.midtrans.com/snap/snap.js' 
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
+            
+        script.src = snapUrl;
         script.setAttribute('data-client-key', MIDTRANS_CLIENT_KEY);
         script.async = true;
         script.onload = () => {
