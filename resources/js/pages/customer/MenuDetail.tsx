@@ -7,8 +7,9 @@ import {
     ShoppingCart,
     Star,
     Store,
+    X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import LikeButton from '../../components/LikeButton';
 import ReviewSection from '../../components/ReviewSection';
@@ -49,6 +50,83 @@ export default function MenuDetail() {
     const [error, setError] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [isAdding, setIsAdding] = useState(false);
+    const [showImagePopup, setShowImagePopup] = useState(false);
+    
+    // Drag handle state
+    const [dragOffset, setDragOffset] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartY = useRef(0);
+    const contentCardRef = useRef<HTMLDivElement>(null);
+
+    // Handle drag start
+    const handleDragStart = useCallback((clientY: number) => {
+        setIsDragging(true);
+        dragStartY.current = clientY;
+    }, []);
+
+    // Handle drag move
+    const handleDragMove = useCallback((clientY: number) => {
+        if (!isDragging) return;
+        const delta = clientY - dragStartY.current;
+        // Only allow dragging down (positive delta)
+        if (delta > 0) {
+            setDragOffset(Math.min(delta, 150));
+        }
+    }, [isDragging]);
+
+    // Handle drag end
+    const handleDragEnd = useCallback(() => {
+        if (dragOffset > 80) {
+            // Threshold reached, show popup
+            setShowImagePopup(true);
+        }
+        setDragOffset(0);
+        setIsDragging(false);
+    }, [dragOffset]);
+
+    // Touch event handlers
+    const onTouchStart = (e: React.TouchEvent) => {
+        handleDragStart(e.touches[0].clientY);
+    };
+    
+    const onTouchMove = (e: React.TouchEvent) => {
+        handleDragMove(e.touches[0].clientY);
+    };
+    
+    const onTouchEnd = () => {
+        handleDragEnd();
+    };
+
+    // Mouse event handlers (for desktop testing)
+    const onMouseDown = (e: React.MouseEvent) => {
+        handleDragStart(e.clientY);
+    };
+
+    // Scroll to top when page loads
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+    
+    // Add global mouse event listeners for drag
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            handleDragMove(e.clientY);
+        };
+        
+        const handleMouseUp = () => {
+            handleDragEnd();
+        };
+        
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+        
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging, handleDragMove, handleDragEnd]);
 
     useEffect(() => {
         const fetchMenu = async () => {
@@ -130,76 +208,129 @@ export default function MenuDetail() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Mobile Layout */}
-            <div className="pb-32 md:hidden">
-                {/* Hero Image */}
-                <div className="relative h-96 w-full">
+            {/* Image Popup Modal */}
+            {showImagePopup && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+                    onClick={() => setShowImagePopup(false)}
+                >
+                    <button
+                        onClick={() => setShowImagePopup(false)}
+                        className="absolute top-4 right-4 rounded-full bg-white/20 p-2 text-white transition-all hover:bg-white/30"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
                     <img
                         src={
                             menu.image_url ||
                             'https://placehold.co/600x600?text=No+Image'
                         }
                         alt={menu.name}
-                        className="h-full w-full object-cover"
+                        className="max-h-[90vh] max-w-full rounded-lg object-contain"
+                        onClick={(e) => e.stopPropagation()}
                     />
-                    {/* Gradient Overlay for Text Readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                </div>
+            )}
 
-                    {/* Top Actions */}
-                    <div className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between p-4 pt-6">
+            {/* Mobile Layout */}
+            <div className="pb-32 md:hidden">
+                {/* Hero Image */}
+                <div className="relative h-72 w-full">
+                    <img
+                        src={
+                            menu.image_url ||
+                            'https://placehold.co/600x600?text=No+Image'
+                        }
+                        alt={menu.name}
+                        className="h-full w-full cursor-pointer object-cover"
+                        onClick={() => setShowImagePopup(true)}
+                    />
+
+                    {/* Back Button Only */}
+                    <div className="absolute top-0 left-0 z-10 p-4 pt-6">
                         <button
                             onClick={() => navigate(-1)}
-                            className="rounded-full border border-white/10 bg-white/20 p-2 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/30 active:scale-95"
+                            className="rounded-full border border-white/10 bg-black/30 p-2 text-white shadow-lg backdrop-blur-md transition-all hover:bg-black/40 active:scale-95"
                         >
                             <ChevronLeft className="h-6 w-6" />
                         </button>
-                        <div className="flex gap-3">
-                            <button className="rounded-full border border-white/10 bg-white/20 p-2 text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/30 active:scale-95">
-                                <Share2 className="h-5 w-5" />
-                            </button>
-                            <LikeButton
-                                menuId={menu.id}
-                                initialLikesCount={menu.likes_count}
-                            />
-                        </div>
+                    </div>
+                </div>
+
+                {/* Content Card */}
+                <div 
+                    ref={contentCardRef}
+                    className="relative -mt-6 min-h-[50vh] overflow-hidden rounded-t-3xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.1)]"
+                    style={{
+                        transform: `translateY(${dragOffset}px)`,
+                        transition: isDragging ? 'none' : 'transform 0.3s ease-out',
+                    }}
+                >
+                    {/* Draggable Handle */}
+                    <div 
+                        className="flex flex-col items-center justify-center py-3 active:cursor-grabbing"
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                        onMouseDown={onMouseDown}
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                    >
+                        <div className={`h-1.5 w-12 rounded-full transition-all ${isDragging ? 'w-16 bg-blue-400' : 'bg-gray-300'}`} />
+                        {/* Pull indicator - inside handle div */}
+                        {dragOffset > 20 && (
+                            <p 
+                                className="mt-2 text-center text-xs text-gray-400"
+                                style={{ opacity: Math.min(dragOffset / 80, 1) }}
+                            >
+                                {dragOffset > 80 ? '↓ Lepaskan' : '↓ Tarik'}
+                            </p>
+                        )}
                     </div>
 
-                    {/* Badge & Info Overlay on Image */}
-                    <div className="absolute right-0 bottom-10 left-0 z-10 p-5 text-white">
-                        {menu.category && (
-                            <span className="mb-3 inline-block rounded-lg bg-blue-600/90 px-3 py-1 text-xs font-bold tracking-wide uppercase shadow-sm backdrop-blur-sm">
-                                {menu.category.name}
-                            </span>
-                        )}
-                        <h1 className="mb-2 text-3xl leading-tight font-extrabold tracking-tight drop-shadow-md">
-                            {menu.name}
-                        </h1>
-                        <div className="flex items-center gap-3 text-sm font-medium text-white/90">
+                    <div className="p-6">
+                        {/* Category Badge & Menu Name */}
+                        <div className="mb-4">
+                            <div className="mb-2 flex items-start justify-between">
+                                <div className="flex-1">
+                                    {menu.category && (
+                                        <span className="mb-2 inline-block rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold tracking-wide text-white uppercase">
+                                            {menu.category.name}
+                                        </span>
+                                    )}
+                                    <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
+                                        {menu.name}
+                                    </h1>
+                                </div>
+                                {/* Share & Like Buttons */}
+                                <div className="flex shrink-0 gap-2">
+                                    <button className="rounded-full border border-gray-200 bg-gray-50 p-2.5 text-gray-500 transition-all hover:bg-gray-100 active:scale-95">
+                                        <Share2 className="h-5 w-5" />
+                                    </button>
+                                    <LikeButton
+                                        menuId={menu.id}
+                                        initialLikesCount={menu.likes_count}
+                                        variant="desktop"
+                                    />
+                                </div>
+                            </div>
                             <span
-                                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 ${
+                                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-sm font-medium ${
                                     isOutOfStock
-                                        ? 'bg-red-500/20 text-red-200'
-                                        : 'bg-green-500/20 text-green-200'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-green-100 text-green-700'
                                 }`}
                             >
                                 <div
-                                    className={`h-1.5 w-1.5 rounded-full ${isOutOfStock ? 'bg-red-400' : 'bg-green-400'}`}
+                                    className={`h-1.5 w-1.5 rounded-full ${isOutOfStock ? 'bg-red-500' : 'bg-green-500'}`}
                                 />
                                 {isOutOfStock
                                     ? 'Stok Habis'
                                     : `Tersedia: ${menu.stock}`}
                             </span>
                         </div>
-                    </div>
-                </div>
 
-                {/* Content Card */}
-                <div className="relative -mt-6 min-h-[50vh] overflow-hidden rounded-t-3xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.1)]">
-                    <div className="mx-auto mt-3 mb-1 h-1.5 w-12 rounded-full bg-gray-200" />
-
-                    <div className="p-6">
-                        {/* Price & Rating Placeholder */}
-                        <div className="mb-8 flex items-end justify-between border-b border-gray-100 pb-6">
+                        {/* Price & Rating */}
+                        <div className="mb-6 flex items-end justify-between border-b border-gray-100 pb-6">
                             <div>
                                 <p className="mb-1 text-sm font-medium text-gray-500">
                                     Harga Satuan
@@ -297,19 +428,14 @@ export default function MenuDetail() {
                             type="button"
                             onClick={handleAddToCart}
                             disabled={isOutOfStock || isAdding}
-                            className={`flex h-12 flex-1 items-center justify-between rounded-xl px-5 font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
+                            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-xl font-bold text-white shadow-lg transition-all active:scale-[0.98] ${
                                 isOutOfStock
                                     ? 'cursor-not-allowed bg-gray-300 shadow-none'
                                     : 'bg-blue-600 shadow-blue-500/30 hover:bg-blue-700'
                             }`}
                         >
-                            <div className="flex items-center gap-2">
-                                <ShoppingCart className="h-5 w-5 fill-white/20" />
-                                <span className="text-sm">Tambah</span>
-                            </div>
-                            <span className="text-base">
-                                {formatRupiah(totalPrice)}
-                            </span>
+                            <ShoppingCart className="h-5 w-5" />
+                            <span>Tambah</span>
                         </button>
                     </div>
                 </div>
@@ -336,7 +462,8 @@ export default function MenuDetail() {
                                     'https://placehold.co/600x600?text=No+Image'
                                 }
                                 alt={menu.name}
-                                className="h-full w-full object-cover"
+                                className="h-full w-full cursor-pointer object-cover transition-transform hover:scale-105"
+                                onClick={() => setShowImagePopup(true)}
                             />
                             {menu.category && (
                                 <div className="absolute top-4 left-4">
@@ -467,10 +594,7 @@ export default function MenuDetail() {
                                             }`}
                                         >
                                             <ShoppingCart className="h-6 w-6" />
-                                            <span>
-                                                Tambah ke Keranjang -{' '}
-                                                {formatRupiah(totalPrice)}
-                                            </span>
+                                            <span>Tambah ke Keranjang</span>
                                         </button>
                                     </div>
                                 </div>

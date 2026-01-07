@@ -8,8 +8,13 @@ export default function FloatingCart() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Don't show on cart or checkout pages
-    if (location.pathname === '/cart' || location.pathname === '/checkout' || totalItems === 0) {
+    // Don't show on cart, checkout, or menu detail pages
+    if (
+        location.pathname === '/cart' || 
+        location.pathname === '/checkout' || 
+        location.pathname.startsWith('/menu/') ||
+        totalItems === 0
+    ) {
         return null;
     }
 
